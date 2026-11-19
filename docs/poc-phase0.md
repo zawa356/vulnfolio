@@ -1,7 +1,7 @@
 # Phase 0 PoC：共通収集アダプターとデータ契約
 
 - 実施日: 2026-11-19
-- 状態: **オフラインデータ変換PoC**。実際のSSH/WinRM接続、Vuls/OpenVASの起動、Web/REST/MCPサーバー、中央DBへの書込は未実装。
+- 状態: **Phase 0当時のオフラインデータ変換PoC記録**。現在のM0/M1a/M1bではWeb/REST/SQLite・JSON手動インポートが追加済み。**SSH/WinRM実機収集、Vuls/OpenVASの起動、MCP、認証付きHTTPS送信は現在も未実装**。
 - 目的: ツール依存の入力形式をアダプターで吸収し、上位が**同一スキーマ**だけを扱えることを確認する。
 
 ## 1. 作成物
@@ -44,7 +44,7 @@ python -m vulnfolio.cli --driver ansible --profile demo-profile --input tests/fi
 python -m unittest discover -s tests -v
 ```
 
-このCLIは**保存済みファイルの読み込みと変換だけ**を行い、対象ホストへ通信しない。現段階では直接インポートしてDBへ保存する機能もない。
+このCLIは**保存済みファイルの読み込みと変換だけ**を行い、対象ホストへ通信しない。**Phase 0当時は**DBへ保存する機能がなかったが、**現在はM1bのJSON手動インポートAPIで保存できる**（[実装済み入力契約](contracts/collection-envelope-v0.1.md)、[手順](poc-m1-import.md)）。
 
 ## 3. 共通出力形式
 
@@ -129,15 +129,15 @@ Vulnerability-Lookupの**公開公式資料で確認できる読み取り系API�
 
 資料: [API](https://www.vulnerability-lookup.org/documentation/api.html) / [自動利用ガイド](https://www.vulnerability-lookup.org/documentation/access-patterns.html) / [Sightings](https://www.vulnerability-lookup.org/user-manual/sightings/)
 
-**重要:** これらのルートの存在はドキュメントに基づく。2026-11-19時点の作業環境からCIRCLの本番APIへのライブ通信は成功しておらず、レスポンスの実測確認・利用許諾・レート制限は未完了。CVE IDの総当たりによる全件同期は避け、案内された差分APIを利用する。
+**Phase 0当時の注記:** 当時はライブ通信未検証だった。**M0で実CVEの取得・保存・HTTP確認に成功**（[GitHub Actions](https://github.com/zawa356/vulnfolio/actions/runs/44445355711)、[M0記録](poc-m0.md)）。利用条件の未検証部分は[後続Issue #16](https://github.com/zawa356/vulnfolio/issues/16)で追跡。CVE IDの総当たりによる全件同期は避け、案内された差分APIを利用する。
 
-## 6. 次のPoCで検証すること
+## 6. Phase 0時点で挙げた後続課題（履歴・現在の進捗ではない）
 
-- [ ] 上流公開APIから**単一の既知CVE**を取得し、JSONのフィールドを検査する（許容される通信条件で実施）。
+- [x] 上流公開APIから**単一の既知CVE**を取得し、JSONのフィールドを検査する（[M0成功証跡](poc-m0.md)）。
 - [ ] VulsとGreenboneの実際の保存済みレポートを使って変換精度を検証する。
 - [ ] Ansible/PowerShellの**読み取り専用収集スクリプト**から共通JSONを出力する。
 - [ ] AdapterのCapability照会、Job API、失敗/再試行、冪等インポートの仕様を具体化する。
 - [ ] 同一資産の複数ソースによる情報の食い違い・重複を保存できるモデルを検証する。
-- [ ] 中間API+ダッシュボードの極小構成につなぐ。
+- [x] 中間API+ダッシュボードの極小構成につなぐ（[M0](poc-m0.md)、[M1](poc-m1.md)）。
 
 関連: [全体構成](architecture.md) / [モジュール化設計](modularity.md) / [要件](requirements.md)
