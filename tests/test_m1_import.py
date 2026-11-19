@@ -91,17 +91,37 @@ class ImportTests(unittest.TestCase):
         newer = copy.deepcopy(payload)
         newer["observed_at"] = "2026-11-20T00:00:00Z"
         newer["observations"][0]["packages"] = []
+        newer["observations"][1]["patches"] = []
         third = self.client.post(self.endpoint(), json=newer)
         self.assertEqual(third.status_code, 201, third.text)
         products = self.store.list_products(rhel["id"])
         self.assertEqual({p["name"] for p in products}, {"openssl", "fluxctl", "manual-only"})
         self.assertEqual(len(self.store.candidates(self.profile["id"])["data"]), 1)
+        win = next(a for a in self.store.list_assets(self.profile["id"]) if a["name"] == "win-demo")
+        self.assertEqual(self.client.get(f"/api/v1/assets/{win['id']}/inventory").json()["snapshot"]["patches"],
+                         ["KB5000000"])
         # Observations list can omit failed hosts; never implicitly remove assets.
         fewer = copy.deepcopy(newer)
         fewer["observed_at"] = "2026-11-21T00:00:00Z"
         fewer["observations"] = fewer["observations"][1:]
         self.assertEqual(self.client.post(self.endpoint(), json=fewer).status_code, 201)
         self.assertEqual(len(self.store.list_assets(self.profile["id"])), 2)
+
+    def test_nonempty_new_package_snapshot_replaces_only_imported_products(self):
+        first = self.envelope()
+        self.assertEqual(self.client.post(self.endpoint(), json=first).status_code, 201)
+        rhel = next(a for a in self.store.list_assets(self.profile["id"]) if a["name"] == "rhel-demo")
+        manual = self.store.add_product(rhel["id"], "manual", "Lab", "1")
+        newer = copy.deepcopy(first)
+        newer["observed_at"] = "2026-11-20T00:00:00Z"
+        newer["observations"][0]["packages"] = [
+            {"name": "unrelated", "version": "1.0", "manager": "rpm"}
+        ]
+        self.assertEqual(self.client.post(self.endpoint(), json=newer).status_code, 201)
+        products = self.store.list_products(rhel["id"])
+        self.assertEqual({p["name"] for p in products}, {"manual", "unrelated"})
+        self.assertIn(manual["id"], [p["id"] for p in products])
+        self.assertEqual(self.store.candidates(self.profile["id"])["data"], [])
 
     def test_rejects_wrong_profile_unsupported_findings_and_invalid_inputs(self):
         payload = self.envelope()
