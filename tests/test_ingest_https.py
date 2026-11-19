@@ -19,6 +19,7 @@ from vulnfolio.ingest_credentials import (
 from vulnfolio.ingest_upload import UploadError, endpoint_url, envelope_bytes, send
 from vulnfolio.inventory_import import InventoryImporter
 from vulnfolio.vulnerability_api import create_app
+from vulnfolio.ingest_server import create_ingest_app
 
 
 class ScopedIngestTests(unittest.TestCase):
@@ -35,7 +36,7 @@ class ScopedIngestTests(unittest.TestCase):
         self.token = read_token(self.token_file)
         self.env = patch.dict(os.environ, {"VULNFOLIO_INGEST_TOKENS_FILE": str(self.store)})
         self.env.start()
-        self.app = create_app(self.db)
+        self.app = create_ingest_app(self.db)
         self.client = TestClient(self.app, base_url="https://example.test",
                                  client=("203.0.113.17", 53121))
         self.path = f"/api/v1/ingest/profiles/{self.profile}/imports"
