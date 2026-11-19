@@ -4,6 +4,12 @@
 - 状態: **第一候補・未確定**。PoCを通じて採否を決定する。
 - 目的: 既存OSSをできる限り無改造で利用し、vulnfolio独自の機能を外付けする。
 
+## 全体を横断する設計原則（2026-11-19合意）
+
+**収集だけでなく、脆弱性データソース・SNS・正規化・照合・スコア・LLM・公開まで、外部実装に依存する箇所を可能な限りモジュール化**する。Ansible/Vuls/OpenVASは共通のジョブAPIと正規化モデルを通して扱い、特有のデータ形式・運用差はAdapterが吸収する。ただし検査能力の違いはCapabilityとして公開し、実際には得られていないFindingを作らない。
+
+モジュール化のためにすべてを別プロセス化しない。**モジュラーモノリス＋必要な収集ワーカー**を初期のデプロイ方針とし、個人運用の単純さを優先する。Web/REST/MCPは同じコアサービスを使う。詳しいブロック図、共通API、観測データとFindingの分離は[モジュール化設計](modularity.md)を参照。
+
 ## 1. 主要方針
 
 1. **既存OSSは脆弱性情報のSystem of Record候補**。Vulnerability-LookupのAPI/Feeder/Sightings/VulnMCPをまず評価する。
@@ -158,4 +164,4 @@ VulnMCPとの機能重複はまず調査し、安易に同名ツールを再実�
 
 **採用条件:** 全データ複製やコアへのパッチなしで主要ユースケースが成立し、OSS/外部API使用制限・費用・保守性が許容できること。満たせない場合はOpenCTIや別方式を再評価する。
 
-関連: [要件](requirements.md) / [OSS比較](oss-comparison.md) / [収集方式](data-ingestion.md) / [ロードマップ](roadmap.md)
+関連: [要件](requirements.md) / [モジュール化設計](modularity.md) / [OSS比較](oss-comparison.md) / [収集方式](data-ingestion.md) / [ロードマップ](roadmap.md)
