@@ -1,0 +1,21 @@
+{
+  "serverName": "rhel-demo",
+  "serverUUID": "synthetic-demo-server",
+  "family": "redhat",
+  "release": "9.4",
+  "scannedAt": "2026-11-19T01:00:00Z",
+  "packages": {
+    "openssl": {
+      "name": "openssl",
+      "version": "3.0.7",
+      "release": "27.el9_4",
+      "arch": "x86_64"
+    }
+  },
+  "scannedCves": {
+    "CVE-2099-0001": {
+      "cveID": "CVE-2099-0001"
+    }
+  },
+  "errors": []
+}
