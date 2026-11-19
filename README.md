@@ -4,7 +4,7 @@
 
 CVE/KEV/EPSS等の公式データと、SNS・セキュリティコミュニティ等の非公式シグナルを整理し、次に問題化しそうな脆弱性・現在進行中の脅威・自分が対応すべき事項を、一つのWebダッシュボードにまとめるOSSプロジェクトです。
 
-> **状態（2026-11-19）：M0完了、M1のローカル資産管理PoCを開発中。** SNS、LLM、実機収集は未実装です。
+> **実装状況（2026-11-19）：M0 / M1a / M1b PoC完了。** M1cの実機収集・認証付きHTTPS転送は未実装です。SNS、LLM、MCPも未実装です。進捗の最新情報は[GitHub Issues](https://github.com/zawa356/vulnfolio/issues)を参照してください。
 
 ## Quick start — M0 / M1 local PoC
 
@@ -44,6 +44,7 @@ My Environmentでは、案件Profile→Asset→Installed Softwareを手動登録
 
 | 文書 | 内容 |
 | --- | --- |
+| **[文書一覧と運用ルール](docs/README.md)** | **仕様・契約・PoCの入口。Issuesを進捗の正本として扱う** |
 | [要件定義（決定事項・将来要件）](docs/requirements.md) | 機能・非機能・データの扱い |
 | [アーキテクチャ案](docs/architecture.md) | 独自中間レイヤー、DB、API、収集・AI分析 |
 | [モジュール化設計](docs/modularity.md) | プラグイン境界・共通API・機能差異の吸収方針 |
@@ -52,9 +53,10 @@ My Environmentでは、案件Profile→Asset→Installed Softwareを手動登録
 | [M1b JSONインポート](docs/poc-m1-import.md) | 収集JSONをProfileへ手動アップロード・冪等取込する手順 |
 | [Phase 0 PoC](docs/poc-phase0.md) | 3種類の収集レポートの共通変換・検証結果・制約 |
 | [OSS比較](docs/oss-comparison.md) | Vulnerability-Lookup vs OpenCTI、選定根拠 |
-| [収集方式・データ契約](docs/data-ingestion.md) | SNS、エージェントレス資産収集、JSON仕様案 |
+| [収集方式・データ契約](docs/data-ingestion.md) | SNS、エージェントレス資産収集、収集方式 |
+| [CollectionEnvelope v0.1.0](docs/contracts/collection-envelope-v0.1.md) | **実装済みJSON入力契約・現在の制限** |
 | [UI設計原則](docs/ui-guidelines.md) | 標準キット優先、情報設計、配色 |
-| [実装ロードマップ・検証事項](docs/roadmap.md) | MVP、PoC、保留事項 |
+| [初期ロードマップ（履歴資料）](docs/roadmap.md) | 当初の計画案。**現在の作業状態はGitHub Issuesが正本** |
 
 ## 現時点の技術方針
 
@@ -70,7 +72,7 @@ OpenCTIは攻撃者、マルウェア、キャンペーン等の関係分析に�
 
 ## Phase 0 オフラインPoC（M0に取り込み済み）
 
-Ansible / Vuls / OpenVASの**保存済み・サンプルレポート**を、同じJSON契約に変換するアダプターとテストはmainに取り込み済みです。**実ホストのSSH/WinRM収集や資産台帳へのJSON自動取込はまだ実装していません**。
+Ansible / Vuls / OpenVASの**保存済み・サンプルレポート**を、同じJSON契約に変換するアダプターとテストはmainに取り込み済みです。**実ホストへのSSH/WinRM収集と認証付きHTTPS自動送信は未実装**です。共通JSONのローカル**手動インポートはM1bで実装済み**です。
 
 ```bash
 PYTHONPATH=src python -m vulnfolio.cli --driver ansible --profile demo-profile --input tests/fixtures/ansible.json
@@ -79,11 +81,11 @@ PYTHONPATH=src python -m unittest discover -s tests -v
 
 ## 開発方針
 
-小規模OSSとして無理のない範囲から始め、まず**情報収集＋検索＋統合ダッシュボード**を完成させ、その後にSNS分析、LLM予測、資産照合、通知・レポートを拡張します。UIはBootstrap系の既存管理画面キットを優先し、独自UI部品を増やしません。
+小規模OSSとして無理のない範囲から始め、M0の**CVE取得＋検索＋ダッシュボード**とM1a/M1bの**資産照合＋JSON手動取込**は実装済みです。続けて実機収集、認証付き転送、SNS分析、LLM予測、通知・レポートを縦スライスで拡張します。UIはBootstrap系の既存管理画面キットを優先し、独自UI部品を増やしません。
 
 ---
 
-この文書は対話による要件調査結果を整理したものです。詳細の「確定」「候補」「未決」は各文書に記載しています。
+このREADMEは現在の操作とナビゲーションを示します。仕様の確定・未決は[文書一覧](docs/README.md)から確認してください。
 
 ## 開発管理（GitHubを正本とする）
 
