@@ -17,6 +17,7 @@ from vulnfolio.ingest_credentials import (
     CredentialsError, authorized, issue_token, load_store, read_token, revoke_token,
 )
 from vulnfolio.ingest_upload import UploadError, endpoint_url, envelope_bytes, send
+from vulnfolio.inventory_import import InventoryImporter
 from vulnfolio.vulnerability_api import create_app
 
 
@@ -58,9 +59,7 @@ class ScopedIngestTests(unittest.TestCase):
         self.assertEqual(first.json()["import_id"], second.json()["import_id"])
         repo = AssetRepository(self.db)
         self.assertEqual(len(repo.list_assets(self.profile)), 2)
-        self.assertEqual(len(repo.list_imports(self.profile)) if hasattr(repo, "list_imports") else
-                         len(__import__("vulnfolio.inventory_import", fromlist=["InventoryImporter"])
-                             .InventoryImporter(repo).list_imports(self.profile)), 1)
+        self.assertEqual(len(InventoryImporter(repo).list_imports(self.profile)), 1)
         # Public asset endpoints are NOT opened by the upload token.
         self.assertEqual(self.client.get("/api/v1/profiles", headers=self.headers).status_code, 403)
         self.assertEqual(self.client.get("/environment", headers=self.headers).status_code, 403)
