@@ -11,7 +11,7 @@ from xml.etree import ElementTree as ET
 
 from vulnfolio.contracts import envelope, finding, InputError
 
-_CVE = re.compile(r"CVE-\\d{4}-\\d{4,}", re.IGNORECASE)
+_CVE = re.compile(r"CVE-\d{4}-\d{4,}", re.IGNORECASE)
 
 
 class OpenVASAdapter:
