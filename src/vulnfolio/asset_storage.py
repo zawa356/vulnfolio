@@ -218,6 +218,7 @@ class AssetRepository(VulnerabilityRepository):
         with self._db() as conn:
             self._asset_profile(conn, asset_id)
             return [dict(row) for row in conn.execute("""
+                SELECT * FROM (
                 SELECT id,asset_id,vendor,name,version,created_at,'manual' AS origin,
                        '' AS epoch,'' AS release,'' AS arch,'' AS manager
                 FROM asset_products WHERE asset_id=?
@@ -225,7 +226,7 @@ class AssetRepository(VulnerabilityRepository):
                 SELECT id,asset_id,vendor,name,version,'' AS created_at,'imported' AS origin,
                        epoch,release,arch,manager
                 FROM imported_products WHERE asset_id=?
-                ORDER BY name COLLATE NOCASE,version
+                ) ORDER BY name COLLATE NOCASE,version
             """, (asset_id, asset_id)).fetchall()]
 
     def delete_product(self, product_id: str) -> None:
@@ -278,6 +279,7 @@ class AssetRepository(VulnerabilityRepository):
         with self._db() as conn:
             self._profile_exists(conn, profile_id)
             products = [dict(row) for row in conn.execute("""
+                SELECT * FROM (
                 SELECT s.id,s.asset_id,s.vendor,s.name,s.version,
                        a.name AS asset_name,a.profile_id
                 FROM asset_products s JOIN assets a ON s.asset_id=a.id
@@ -287,7 +289,7 @@ class AssetRepository(VulnerabilityRepository):
                        a.name AS asset_name,a.profile_id
                 FROM imported_products s JOIN assets a ON s.asset_id=a.id
                 WHERE a.profile_id=?
-                ORDER BY asset_name,name
+                ) ORDER BY asset_name,name
             """, (profile_id, profile_id)).fetchall()]
             cvss = conn.execute(
                 "SELECT id,title,raw_json FROM vulnerabilities ORDER BY id LIMIT ?", (max_cves + 1,)
