@@ -62,34 +62,34 @@ def main():
                 page.goto(base + "/environment", wait_until="domcontentloaded")
                 page.locator("#profile-name").fill("Test Project")
                 page.get_by_role("button", name="Add profile").click()
-                page.locator("#profile-select option", has_text="Test Project").wait_for(timeout=10000)
+                page.locator("#profile-select option", has_text="Test Project").wait_for(state="attached", timeout=10000)
 
                 page.locator("#asset-name").fill("rhel01")
                 page.locator("#asset-os").fill("Linux")
                 page.locator("#asset-version").fill("RHEL 9.4")
                 page.get_by_role("button", name="Add asset to profile").click()
-                page.locator("#asset-select option", has_text="rhel01").wait_for(timeout=10000)
+                page.locator("#asset-select option", has_text="rhel01").wait_for(state="attached", timeout=10000)
 
                 page.locator("#product-vendor").fill("Acme")
                 page.locator("#product-name").fill("fluxctl")
                 page.locator("#product-version").fill("1.2.0")
                 page.locator("#product-form button").click()
-                page.locator("#candidate-rows").get_by_text(CVE).wait_for(timeout=10000)
+                page.locator("#candidate-rows").get_by_text(CVE).wait_for(state="attached", timeout=10000)
                 assert page.locator("#candidate-rows tr").count() == 1
                 assert "Exact version listed" in page.locator("#candidate-rows").inner_text()
                 page.locator("#candidate-rows select").select_option("mitigated")
                 page.locator("#candidate-rows input").fill("Test mitigation complete")
                 page.locator("#candidate-rows button").click()
-                page.get_by_text("No potential matches in this local dataset.", exact=False).wait_for(timeout=10000)
+                page.get_by_text("No potential matches in this local dataset.", exact=False).wait_for(state="attached", timeout=10000)
                 page.locator("#include-closed").check()
-                page.locator("#candidate-rows").get_by_text(CVE).wait_for(timeout=10000)
+                page.locator("#candidate-rows").get_by_text(CVE).wait_for(state="attached", timeout=10000)
                 assert page.locator("#candidate-rows select").input_value() == "mitigated"
                 assert page.locator("#candidate-rows input").input_value() == "Test mitigation complete"
 
                 page.reload(wait_until="domcontentloaded")
-                page.locator("#profile-select option", has_text="Test Project").wait_for(timeout=10000)
+                page.locator("#profile-select option", has_text="Test Project").wait_for(state="attached", timeout=10000)
                 page.locator("#include-closed").check()
-                page.locator("#candidate-rows").get_by_text(CVE).wait_for(timeout=10000)
+                page.locator("#candidate-rows").get_by_text(CVE).wait_for(state="attached", timeout=10000)
                 assert page.locator("#candidate-rows select").input_value() == "mitigated"
                 assert not errors, errors
                 browser.close()
