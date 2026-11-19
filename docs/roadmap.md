@@ -44,9 +44,11 @@
 
 ### P0-4 共通収集契約のPoC
 
+**2026-11-19時点の進捗:** 3種（Ansible/Vuls/OpenVAS）の**保存済みレポート変換PoCと10件のテスト**を作業ブランチへ追加。外部API/実機収集・ジョブ実行/永続化は未実装。詳細は[PoCレポート](poc-phase0.md)。
+
 - [ ] AssetObservation / VulnerabilityFinding / CapabilitySet / JobStatus の最小データ契約を定義する
-- [ ] Ansible/軽量JSONとVuls/OpenVAS模擬結果を**同じImport/Job API**へ変換できるか検証
-- [ ] 結果の一部欠損・取得失敗・同一CVE重複を正しく扱う
+- [x] Ansible/軽量JSONとVuls/OpenVAS模擬結果を**同一のJSONエンベロープ**へ変換（ジョブAPIは未実装）
+- [ ] 結果の一部欠損・取得失敗・同一CVE重複を正しく扱う（部分失敗とCVEなしFindingはテスト済み、重複統合は未実装）
 - [ ] 上位Web/REST/MCPにスキャナー固有の差異が漏れないことを確認
 
 ## Phase 1: 動くダッシュボード（最優先）
