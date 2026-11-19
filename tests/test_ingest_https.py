@@ -19,6 +19,7 @@ from vulnfolio.ingest_credentials import (
 from vulnfolio.ingest_upload import UploadError, endpoint_url, envelope_bytes, send
 from vulnfolio.inventory_import import InventoryImporter
 from vulnfolio.vulnerability_api import create_app
+from vulnfolio.ingest_server import create_ingest_app
 
 
 class ScopedIngestTests(unittest.TestCase):
@@ -35,7 +36,7 @@ class ScopedIngestTests(unittest.TestCase):
         self.token = read_token(self.token_file)
         self.env = patch.dict(os.environ, {"VULNFOLIO_INGEST_TOKENS_FILE": str(self.store)})
         self.env.start()
-        self.app = create_app(self.db)
+        self.app = create_ingest_app(self.db)
         self.client = TestClient(self.app, base_url="https://example.test",
                                  client=("203.0.113.17", 53121))
         self.path = f"/api/v1/ingest/profiles/{self.profile}/imports"
@@ -61,11 +62,44 @@ class ScopedIngestTests(unittest.TestCase):
         self.assertEqual(len(repo.list_assets(self.profile)), 2)
         self.assertEqual(len(InventoryImporter(repo).list_imports(self.profile)), 1)
         # Public asset endpoints are NOT opened by the upload token.
-        self.assertEqual(self.client.get("/api/v1/profiles", headers=self.headers).status_code, 403)
-        self.assertEqual(self.client.get("/environment", headers=self.headers).status_code, 403)
+        self.assertEqual(self.client.get("/api/v1/profiles", headers=self.headers).status_code, 404)
+        self.assertEqual(self.client.get("/environment", headers=self.headers).status_code, 404)
         self.assertEqual(self.client.get("/api/v1/ingest/profiles/" + self.profile + "/imports",
                                          headers=self.headers).status_code, 405)
         self.assertNotIn("Company A", self.client.get("/api/v1/vulnerabilities").text)
+
+    def test_ingest_app_exposes_only_upload_and_local_admin_is_separate(self):
+        """Even local callers and stolen ingest tokens get no management routes."""
+        forbidden_paths = (
+            "/", "/environment", "/api/v1/health", "/api/v1/vulnerabilities",
+            "/api/v1/profiles", "/api/v1/profiles/" + self.profile,
+            "/api/v1/profiles/" + self.profile + "/imports",
+            "/api/v1/profiles/" + self.profile + "/assets",
+            "/api/v1/assets/not-an-id/products",
+            "/docs", "/redoc", "/openapi.json", "/static/app.js",
+        )
+        for path in forbidden_paths:
+            for headers in ({}, self.headers):
+                with self.subTest(path=path, authenticated=bool(headers)):
+                    self.assertEqual(self.client.get(path, headers=headers).status_code, 404)
+        self.assertEqual(self.client.post(self.path, json=self.payload, headers=self.headers).status_code, 201)
+        self.assertEqual(self.client.get(self.path, headers=self.headers).status_code, 405)
+        self.assertEqual(self.client.put(self.path, json=self.payload, headers=self.headers).status_code, 405)
+
+        with TestClient(create_ingest_app(self.db), base_url="https://127.0.0.1",
+                        client=("127.0.0.1", 51000)) as local_ingest:
+            for path in ("/environment", "/api/v1/profiles", "/docs", "/openapi.json"):
+                self.assertEqual(local_ingest.get(path).status_code, 404)
+
+        # Local management app remains functional but has NO ingest route.
+        with TestClient(create_app(self.db), base_url="http://127.0.0.1",
+                        client=("127.0.0.1", 51001)) as local_admin:
+            self.assertEqual(local_admin.get("/api/v1/profiles").status_code, 200)
+            self.assertEqual(local_admin.get("/environment").status_code, 200)
+            self.assertEqual(local_admin.post(self.path, json=self.payload,
+                                             headers=self.headers).status_code, 404)
+        with TestClient(create_app(self.db)) as remote_admin:
+            self.assertEqual(remote_admin.get("/api/v1/profiles").status_code, 403)
 
     def test_profile_scope_isolated_and_mismatch_validation(self):
         wrong_url = f"/api/v1/ingest/profiles/{self.other}/imports"

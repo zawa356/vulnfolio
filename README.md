@@ -4,7 +4,7 @@
 
 CVE/KEV/EPSS等の公式データと、SNS・セキュリティコミュニティ等の非公式シグナルを整理し、次に問題化しそうな脆弱性・現在進行中の脅威・自分が対応すべき事項を、一つのWebダッシュボードにまとめるOSSプロジェクトです。
 
-> **実装状況（2026-11-19）：M0 / M1a / M1bとM1c収集コードPoC完了。M1c認証付きHTTPSアップロードPoCを追加。** 実Linux/Windows接続とLAN/本番運用は未検証です。SNS・LLM・MCPは未実装です。進捗の最新情報は[GitHub Issues](https://github.com/zawa356/vulnfolio/issues)を参照してください。
+> **実装状況（2026-11-19）：M0 / M1a / M1bとM1c収集コードPoC完了。M1c認証付きHTTPSアップロード専用アプリを追加。** 実Linux/Windows接続とLAN/本番運用は未検証です。SNS・LLM・MCPは未実装です。進捗の最新情報は[GitHub Issues](https://github.com/zawa356/vulnfolio/issues)を参照してください。
 
 ## Quick start — M0 / M1 local PoC
 
@@ -52,7 +52,7 @@ My Environmentでは、案件Profile→Asset→Installed Softwareを手動登録
 | [M1a PoC](docs/poc-m1.md) | ローカル案件・資産登録、影響候補、対応履歴、権限上の制限 |
 | [M1b JSONインポート](docs/poc-m1-import.md) | 収集JSONをProfileへ手動アップロード・冪等取込する手順 |
 | [M1c Agentless収集PoC](docs/poc-m1c-agentless.md) | Linux SSH / Windows WinRMの読み取り収集の実行方法・安全上の制限 |
-| [M1c HTTPSアップロードPoC](docs/poc-m1c-https.md) | Profileスコープのトークン発行・失効、TLS検証、再送、実プロセス試験 |
+| [M1c HTTPSアップロードPoC](docs/poc-m1c-https.md) | **専用`ingest_server:app`**、Profileスコープのトークン、TLS検証、再送、実プロセス試験 |
 | [Phase 0 PoC](docs/poc-phase0.md) | 3種類の収集レポートの共通変換・検証結果・制約 |
 | [OSS比較](docs/oss-comparison.md) | Vulnerability-Lookup vs OpenCTI、選定根拠 |
 | [収集方式・データ契約](docs/data-ingestion.md) | SNS、エージェントレス資産収集、収集方式 |
@@ -74,7 +74,7 @@ OpenCTIは攻撃者、マルウェア、キャンペーン等の関係分析に�
 
 ## Phase 0 オフラインPoC（M0に取り込み済み）
 
-Ansible / Vuls / OpenVASの**保存済み・サンプルレポート**を、同じJSON契約に変換するアダプターとテストはmainに取り込み済みです。**Linux/WindowsへのSSH/WinRM収集コードはM1cで追加しましたが、実機接続は未検証**です。**別プロセスのトークン認証付きHTTPS JSON送信PoCを追加**しています（[導入と残留リスク](docs/poc-m1c-https.md)）。実機・LAN/本番受入と自動スケジューリングは未完了です。共通JSONのローカル**手動インポートはM1bで実装済み**です。
+Ansible / Vuls / OpenVASの**保存済み・サンプルレポート**を、同じJSON契約に変換するアダプターとテストはmainに取り込み済みです。**Linux/WindowsへのSSH/WinRM収集コードはM1cで追加しましたが、実機接続は未検証**です。**管理アプリから分離した受信専用`vulnfolio.ingest_server:app`とトークン認証付きHTTPS JSON送信PoCを追加**しています（[導入と残留リスク](docs/poc-m1c-https.md)）。実機・LAN/本番受入と自動スケジューリングは未完了です。共通JSONのローカル**手動インポートはM1bで実装済み**です。
 
 ```bash
 PYTHONPATH=src python -m vulnfolio.cli --driver ansible --profile demo-profile --input tests/fixtures/ansible.json

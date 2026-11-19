@@ -1,4 +1,4 @@
-"""Real local TLS process E2E; all data and certificates are synthetic."""
+"""Offline collector CLI -> verified TLS -> private SQLite -> CVE matching E2E."""
 from __future__ import annotations
 
 import json
@@ -14,11 +14,12 @@ import unittest
 
 import httpx
 
-from vulnfolio.adapters.ansible import AnsibleAdapter
+from vulnfolio.collector_export import hostname_file
 from vulnfolio.asset_storage import AssetRepository
 from vulnfolio.ingest_credentials import issue_token, read_token
 from vulnfolio.ingest_upload import UploadError, send
 from vulnfolio.inventory_import import InventoryImporter
+from vulnfolio.vulnerabilities import from_cve_record
 
 
 def free_port():
@@ -47,16 +48,67 @@ class HTTPSProcessTests(unittest.TestCase):
             auth_store = root / "auth" / "tokens.json"
             bearer_file = root / "auth" / "client.token"
             issue_token(auth_store, profile, bearer_file)
-            raw = json.loads((Path(__file__).parent / "fixtures" / "ansible.json").read_text())
-            envelope = AnsibleAdapter().normalize(raw, profile)
+            # 100% synthetic offline source. Run the same real collector CLI
+            # that would read controller artifacts produced by Ansible.
+            cve = json.loads((Path(__file__).parent / "fixtures" / "cve_affected.json").read_text())
+            repo.upsert(
+                from_cve_record(cve, "CVE-2099-23456", "https://example.invalid/CVE-2099-23456"), cve
+            )
+            artifact_dir = root / "artifacts"
+            artifact_dir.mkdir()
+            artifacts = {
+                "linux-node": {
+                    "asset_id": "linux-node",
+                    "ansible_facts": {
+                        "ansible_os_family": "RedHat",
+                        "ansible_distribution": "RedHat",
+                        "ansible_distribution_version": "9.5",
+                        "packages": {
+                            "fluxctl": [
+                                {"name": "fluxctl", "version": "1.2.0",
+                                 "release": "1.el9", "epoch": "0", "arch": "x86_64",
+                                 "source": "rpm"}
+                            ]
+                        }
+                    },
+                },
+                "windows-node": {
+                    "asset_id": "windows-node",
+                    "ansible_facts": {
+                        "ansible_os_family": "Windows",
+                        "ansible_distribution": "Microsoft Windows Server",
+                        "ansible_distribution_version": "10.0.20348",
+                        "os_build": "20348",
+                        "windows_kb": ["KB5000000"],
+                        "packages": {
+                            "Synthetic Tool": [
+                                {"name": "Synthetic Tool", "version": "2.0",
+                                 "source": "windows_registry"}
+                            ]
+                        }
+                    },
+                },
+            }
+            for host, record in artifacts.items():
+                (artifact_dir / hostname_file(host)).write_text(
+                    json.dumps(record), encoding="utf-8"
+                )
             source = root / "collected.json"
-            source.write_text(json.dumps(envelope), encoding="utf-8")
+            collected = subprocess.run([
+                sys.executable, "-m", "vulnfolio.collector_export",
+                "--artifacts", str(artifact_dir),
+                "--expected-host", "linux-node",
+                "--expected-host", "windows-node",
+                "--profile", profile, "--output", str(source),
+            ], capture_output=True, text=True, timeout=25)
+            self.assertEqual(collected.returncode, 0, collected.stderr)
+            self.assertEqual(len(json.loads(source.read_text())["observations"]), 2)
             port = free_port()
             origin = f"https://127.0.0.1:{port}"
             env = dict(os.environ, VULNFOLIO_DB=str(db),
                        VULNFOLIO_INGEST_TOKENS_FILE=str(auth_store))
             server = subprocess.Popen([
-                sys.executable, "-m", "uvicorn", "vulnfolio.vulnerability_api:app",
+                sys.executable, "-m", "uvicorn", "vulnfolio.ingest_server:app",
                 "--host", "127.0.0.1", "--port", str(port),
                 "--ssl-keyfile", str(key), "--ssl-certfile", str(cert),
                 "--no-proxy-headers", "--log-level", "error",
@@ -66,7 +118,7 @@ class HTTPSProcessTests(unittest.TestCase):
                     for _ in range(80):
                         self.assertIsNone(server.poll(), "HTTPS server exited before readiness")
                         try:
-                            if client.get(origin + "/api/v1/health").status_code == 200:
+                            if client.get(origin + "/api/v1/health").status_code == 404:
                                 break
                         except httpx.TransportError:
                             pass
@@ -74,6 +126,13 @@ class HTTPSProcessTests(unittest.TestCase):
                     else:
                         self.fail("Local Uvicorn TLS server never became ready")
 
+                # The actual TCP/TLS listener must NOT expose administrative routes,
+                # even to a local caller. Probe using the TLS process itself.
+                with httpx.Client(verify=str(cert), trust_env=False, timeout=3) as client:
+                    for path in ("/", "/api/v1/health", "/api/v1/vulnerabilities",
+                                 "/api/v1/profiles", "/environment", "/docs",
+                                 "/openapi.json", "/static/app.js"):
+                        self.assertEqual(client.get(origin + path).status_code, 404, path)
                 # The normal uploader CLI (not TestClient) performs a verified
                 # HTTP round-trip and should write a single batch to SQLite.
                 cmd = [
@@ -91,6 +150,16 @@ class HTTPSProcessTests(unittest.TestCase):
                 self.assertIn("duplicate=true", second.stdout)
                 self.assertEqual(len(InventoryImporter(AssetRepository(db)).list_imports(profile)), 1)
                 self.assertEqual(len(AssetRepository(db).list_assets(profile)), 2)
+                matched = AssetRepository(db).candidates(profile)["data"]
+                self.assertEqual(len(matched), 1)
+                self.assertEqual(matched[0]["cve_id"], "CVE-2099-23456")
+                self.assertEqual(matched[0]["match_basis"], "exact_version_listed_affected")
+                win = next(
+                    item for item in AssetRepository(db).list_assets(profile)
+                    if item["name"] == "windows-node"
+                )
+                inventory = InventoryImporter(AssetRepository(db)).asset_snapshot(win["id"])
+                self.assertEqual(inventory["patches"], ["KB5000000"])
 
                 with self.assertRaises(UploadError):
                     # Cert is self-signed: system default trust must REJECT it.
