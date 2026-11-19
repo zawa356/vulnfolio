@@ -5,6 +5,12 @@
 - 最優先成果物: **外部の既存脆弱性データを使った、閲覧・検索可能な統合Webダッシュボード**
 - 方針: 追加API従量課金0円を目標、既存OSS無改造、少数サービスで稼働
 
+## 横断方針: モジュラーアーキテクチャ
+
+**Ansible・Vuls・OpenVASを共通APIで扱えること**を設計要件に追加。データ取得の深さや検査機能の差はCapability、AssetObservation、VulnerabilityFindingによって表す。収集元以外の脆弱性ソース・SNS・Matcher・Scorer・LLM・公開先も交換可能な境界を設ける。
+
+初期からすべてのアダプターを実装せず、**契約と模擬アダプターを先に作り、実装は必要なものから**。モジュラーモノリス＋独立ワーカーを原則とする。詳細は[モジュール化設計](modularity.md)。
+
 ## Phase 0: 調査・PoC（実装前）
 
 ### P0-1 Vulnerability-LookupのAPI検証
@@ -35,6 +41,13 @@
 - [ ] OSSライセンスと追加ビルド工程を調査
 
 **受入条件:** 見た目と保守性の両面で採用キットを一つに絞る。
+
+### P0-4 共通収集契約のPoC
+
+- [ ] AssetObservation / VulnerabilityFinding / CapabilitySet / JobStatus の最小データ契約を定義する
+- [ ] Ansible/軽量JSONとVuls/OpenVAS模擬結果を**同じImport/Job API**へ変換できるか検証
+- [ ] 結果の一部欠損・取得失敗・同一CVE重複を正しく扱う
+- [ ] 上位Web/REST/MCPにスキャナー固有の差異が漏れないことを確認
 
 ## Phase 1: 動くダッシュボード（最優先）
 
@@ -121,4 +134,4 @@
 - ユーザーに見せる全操作でLLM推論を実行する
 - ダッシュボードより先に通知や複雑な管理機能を作り込む
 
-関連: [要件](requirements.md) / [アーキテクチャ](architecture.md) / [OSS比較](oss-comparison.md) / [収集設計](data-ingestion.md) / [UI規約](ui-guidelines.md)
+関連: [要件](requirements.md) / [モジュール化設計](modularity.md) / [アーキテクチャ](architecture.md) / [OSS比較](oss-comparison.md) / [収集設計](data-ingestion.md) / [UI規約](ui-guidelines.md)
