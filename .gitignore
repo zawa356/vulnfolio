@@ -25,3 +25,9 @@ collector/ansible/group_vars/
 collector/ansible/host_vars/
 collector/ansible/results/
 *.retry
+
+# HTTPS uploader bearer and private key material
+*.token
+*.key
+*.p12
+ingest-tokens.json

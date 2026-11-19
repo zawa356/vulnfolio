@@ -101,7 +101,7 @@ flowchart LR
 
 - `observations`は資産観測、`findings`はスキャナーの判定で別物です。
 - M1bの**ローカル手動インポートは実装済み**。`findings`が1件でもある場合は全件拒否。Vuls/OpenVASのFindingは未対応。
-- **実機向けAnsible/PowerShell収集コードはM1cで追加（実機の通信検証は未実施）**。認証付きHTTPS送信は未実装。Issue #24/#27で進行管理します。
+- **実機向けAnsible/PowerShell収集コードはM1cで追加（実機の通信検証は未実施）**。**認証付きHTTPS送信PoCは別モジュールとして追加**（[仕様と制約](poc-m1c-https.md)）。実環境/LAN越しの受入は未実施。Issue #24/#30/#31で進行管理します。
 - `os.build`は現行Importerで入力検証のみ実施し、AssetのDB列には保存していません。Windows OSビルド照合は今後の課題。
 
 ### 正規化・照合の注意点
