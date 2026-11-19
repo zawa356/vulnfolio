@@ -1,0 +1,28 @@
+name: M0 Chromium browser acceptance
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/browser_smoke.py'
+      - '.github/workflows/browser-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install vulnfolio and Playwright
+        run: |
+          python -m pip install -e .
+          python -m pip install 'playwright>=1.56,<2'
+          python -m playwright install --with-deps chromium
+      - name: Run actual browser UI test with synthetic local records
+        run: python scripts/browser_smoke.py
