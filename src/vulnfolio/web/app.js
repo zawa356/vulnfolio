@@ -5,10 +5,13 @@
 const $ = (id) => document.getElementById(id);
 const state = {page: 1, perPage: 25, query: "", count: 0, request: 0};
 
-function showAlert(message) {
+const alerts = {health: "", list: ""};
+function showAlert(message, channel = "list") {
+  alerts[channel] = message;
+  const combined = [alerts.health, alerts.list].filter(Boolean).join(" — ");
   const element = $("alert");
-  element.textContent = message;
-  element.classList.toggle("d-none", !message);
+  element.textContent = combined;
+  element.classList.toggle("d-none", !combined);
 }
 
 function formatDate(value) {
@@ -108,10 +111,10 @@ async function loadHealth() {
     const state = health.status;
     badge.className = "badge bg-" + (state === "ready" ? "green" : state === "degraded" ? "red" : "secondary") + "-lt";
     badge.textContent = state === "ready" ? "Last sync succeeded" : state === "degraded" ? "Last sync failed" : "Not synced";
-    if (health.upstream.last_error) showAlert("Upstream sync issue: " + health.upstream.last_error + " (previous data is preserved)");
+    showAlert(health.upstream.last_error ? "Upstream sync issue: " + health.upstream.last_error + " (previous data is preserved)" : "", "health");
   } catch (error) {
     $("source-status").textContent = "Local API unavailable";
-    showAlert("Unable to load health status: " + error.message);
+    showAlert("Unable to load health status: " + error.message, "health");
   }
 }
 
