@@ -76,6 +76,10 @@ def main() -> None:
                 page.locator("#vulnerability-rows a", has_text=CVE).click()
                 detail = page.locator("#detail")
                 assert detail.is_visible()
+                page.wait_for_function(
+                    "() => document.getElementById('detail-description').textContent.includes('Synthetic record for tests only.')",
+                    timeout=10000,
+                )
                 text = page.locator("#detail-description").inner_text()
                 assert "Synthetic record for tests only." in text
                 assert "<script>" in text, "escaped literal markup must remain plain text"
