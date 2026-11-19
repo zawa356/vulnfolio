@@ -95,6 +95,7 @@ async function loadAssets(preferred = state.asset) {
     resetRows("product-rows", 4, "Create a profile and asset first.");
     resetRows("candidate-rows", 4, "Create a profile first.");
     byId("coverage").textContent = "No profile selected.";
+    byId("import-history").textContent = "";
     return;
   }
   const result = await api("/api/v1/profiles/" + encodeURIComponent(state.profile) + "/assets");
@@ -104,7 +105,7 @@ async function loadAssets(preferred = state.asset) {
   state.asset = result.data.some((item) => item.id === preferred)
     ? preferred : (result.data[0]?.id || "");
   select.value = state.asset;
-  await Promise.all([loadProducts(), loadCandidates()]);
+  await Promise.all([loadProducts(), loadCandidates(), loadImportHistory()]);
 }
 
 async function loadProducts() {
@@ -120,18 +121,38 @@ async function loadProducts() {
     const tr = document.createElement("tr");
     tr.append(cell(product.vendor || "—"), cell(product.name), cell(product.version || "Unknown"));
     const td = document.createElement("td");
-    const remove = document.createElement("button");
-    remove.type = "button";
-    remove.className = "btn btn-sm btn-outline-danger";
-    remove.textContent = "Remove";
-    remove.addEventListener("click", () => runAction(async () => {
-      await api("/api/v1/products/" + encodeURIComponent(product.id), "DELETE");
-      await Promise.all([loadProducts(), loadCandidates()]);
-    }, "Software entry removed."));
-    td.append(remove);
+    if (product.origin === "imported") {
+      td.append(document.createTextNode("Imported (" + (product.manager || "unknown manager") + ")"));
+    } else {
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "btn btn-sm btn-outline-danger";
+      remove.textContent = "Remove";
+      remove.addEventListener("click", () => runAction(async () => {
+        await api("/api/v1/products/" + encodeURIComponent(product.id), "DELETE");
+        await Promise.all([loadProducts(), loadCandidates()]);
+      }, "Software entry removed."));
+      td.append(remove);
+    }
     tr.append(td);
     rows.append(tr);
   }
+}
+
+async function loadImportHistory() {
+  if (!state.profile) {
+    byId("import-history").textContent = "";
+    return;
+  }
+  const result = await api("/api/v1/profiles/" + encodeURIComponent(state.profile) + "/imports");
+  if (!result.data.length) {
+    byId("import-history").textContent = "No previous imports for this profile.";
+    return;
+  }
+  const latest = result.data[0];
+  byId("import-history").textContent =
+    "Latest import: " + latest.collector + " · " + latest.asset_count +
+    " assets · " + latest.error_count + " collection errors · " + latest.imported_at;
 }
 
 async function loadCandidates() {
@@ -196,6 +217,33 @@ async function loadCandidates() {
     rows.append(tr);
   }
 }
+
+byId("import-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  runAction(async () => {
+    if (!state.profile) throw new Error("Create or select a profile first.");
+    const file = byId("import-file").files?.[0];
+    if (!file) throw new Error("Select a JSON file.");
+    if (file.size > 2 * 1024 * 1024) throw new Error("JSON exceeds 2 MiB.");
+    let payload;
+    try {
+      payload = JSON.parse(await file.text());
+    } catch (_) {
+      throw new Error("The selected file is not valid JSON.");
+    }
+    if (payload?.profile_id !== state.profile) {
+      throw new Error("The JSON profile_id does not match the selected profile. Generate it with --profile " + state.profile);
+    }
+    const result = await api("/api/v1/profiles/" + encodeURIComponent(state.profile) +
+                             "/imports", "POST", payload);
+    byId("import-summary").textContent =
+      (result.duplicate ? "Already imported (no changes): " : "Imported: ") +
+      result.assets_seen + " assets · " + result.error_count + " collection errors · " +
+      result.collector;
+    byId("import-form").reset();
+    await loadAssets(state.asset);
+  }, "Inventory processing complete.");
+});
 
 byId("profile-form").addEventListener("submit", (event) => {
   event.preventDefault();
