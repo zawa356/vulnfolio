@@ -1,7 +1,6 @@
 """Private M1 profile/asset APIs. Local-only gate is not full authentication."""
 from __future__ import annotations
 
-import json
 from ipaddress import ip_address
 from pathlib import Path
 
@@ -10,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from vulnfolio.asset_storage import AssetRepository, Conflict, NotFound
 from vulnfolio.inventory_import import InventoryImporter, ImportValidationError
+from vulnfolio.ingest_http import read_inventory_json
 
 PRIVATE_PREFIX = "/api/v1"
 
@@ -131,20 +131,7 @@ def build_asset_router(repo: AssetRepository) -> APIRouter:
     @router.post("/profiles/{profile_id}/imports", status_code=201)
     async def import_inventory(profile_id: str, request: Request):
         """Accept a validated canonical JSON envelope, never scanner-specific raw output."""
-        if not request.headers.get("content-type", "").lower().startswith("application/json"):
-            raise HTTPException(status_code=415, detail="Content-Type must be application/json")
-        maximum = 2 * 1024 * 1024
-        chunks = []
-        total = 0
-        async for chunk in request.stream():
-            total += len(chunk)
-            if total > maximum:
-                raise HTTPException(status_code=413, detail="Maximum upload size is 2 MiB")
-            chunks.append(chunk)
-        try:
-            document = json.loads(b"".join(chunks).decode("utf-8"))
-        except (UnicodeDecodeError, ValueError) as exc:
-            raise HTTPException(status_code=422, detail="Invalid UTF-8 JSON envelope") from exc
+        document = await read_inventory_json(request)
         try:
             return importer.import_envelope(profile_id, document)
         except (ImportValidationError, NotFound, ValueError) as exc:
