@@ -5,6 +5,7 @@ const state = {profile: "", asset: ""};
 const STATUSES = [
   ["new", "New / review required"],
   ["investigating", "Investigating"],
+  ["affected", "Affected (manual assessment)"],
   ["in_progress", "In progress"],
   ["mitigated", "Mitigated"],
   ["not_affected", "Not affected"],
