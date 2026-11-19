@@ -1,0 +1,32 @@
+{
+  "dataType": "CVE_RECORD",
+  "dataVersion": "5.2",
+  "cveMetadata": {
+    "cveId": "CVE-2099-23456",
+    "state": "PUBLISHED",
+    "datePublished": "2099-01-02T00:00:00Z",
+    "dateUpdated": "2099-01-03T00:00:00Z"
+  },
+  "containers": {
+    "cna": {
+      "title": "Synthetic Acme fluxctl advisory",
+      "descriptions": [{"lang": "en", "value": "Used only for offline tests. Do not infer real impact."}],
+      "references": [{"url": "https://example.invalid/advisories/fluxctl"}],
+      "affected": [
+        {
+          "vendor": "Acme",
+          "product": "fluxctl",
+          "versions": [
+            {"version": "1.2.0", "status": "affected"},
+            {"version": "1.2.1", "status": "unaffected"}
+          ]
+        },
+        {
+          "vendor": "Acme",
+          "product": "helper",
+          "versions": [{"version": "2.0.0", "status": "affected"}]
+        }
+      ]
+    }
+  }
+}
