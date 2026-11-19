@@ -91,6 +91,39 @@ class AssetRepository(VulnerabilityRepository):
                 CREATE INDEX IF NOT EXISTS idx_assets_profile ON assets(profile_id);
                 CREATE INDEX IF NOT EXISTS idx_products_asset ON asset_products(asset_id);
                 CREATE INDEX IF NOT EXISTS idx_assessment_history_asset ON assessment_history(asset_id,cve_id);
+                CREATE TABLE IF NOT EXISTS inventory_imports (
+                    id TEXT PRIMARY KEY,
+                    profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+                    content_sha256 TEXT NOT NULL,
+                    collector TEXT NOT NULL,
+                    observed_at TEXT,
+                    imported_at TEXT NOT NULL,
+                    asset_count INTEGER NOT NULL,
+                    error_count INTEGER NOT NULL,
+                    UNIQUE(profile_id, content_sha256)
+                );
+                CREATE TABLE IF NOT EXISTS asset_inventory_snapshots (
+                    asset_id TEXT PRIMARY KEY REFERENCES assets(id) ON DELETE CASCADE,
+                    import_id TEXT NOT NULL REFERENCES inventory_imports(id),
+                    collector TEXT NOT NULL,
+                    observed_at TEXT,
+                    patches_json TEXT NOT NULL,
+                    imported_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS imported_products (
+                    id TEXT PRIMARY KEY,
+                    asset_id TEXT NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+                    import_id TEXT NOT NULL REFERENCES inventory_imports(id),
+                    vendor TEXT NOT NULL DEFAULT '',
+                    name TEXT NOT NULL,
+                    version TEXT NOT NULL DEFAULT '',
+                    epoch TEXT NOT NULL DEFAULT '',
+                    release TEXT NOT NULL DEFAULT '',
+                    arch TEXT NOT NULL DEFAULT '',
+                    manager TEXT NOT NULL DEFAULT '',
+                    UNIQUE(asset_id,name,version,epoch,release,arch,manager)
+                );
+                CREATE INDEX IF NOT EXISTS idx_import_products_asset ON imported_products(asset_id);
             """)
 
     def _profile_exists(self, conn: sqlite3.Connection, profile_id: str) -> None:
@@ -184,10 +217,17 @@ class AssetRepository(VulnerabilityRepository):
     def list_products(self, asset_id: str) -> list[dict[str, Any]]:
         with self._db() as conn:
             self._asset_profile(conn, asset_id)
-            return [dict(row) for row in conn.execute(
-                "SELECT * FROM asset_products WHERE asset_id=? ORDER BY name COLLATE NOCASE,version",
-                (asset_id,),
-            ).fetchall()]
+            return [dict(row) for row in conn.execute("""
+                SELECT * FROM (
+                SELECT id,asset_id,vendor,name,version,created_at,'manual' AS origin,
+                       '' AS epoch,'' AS release,'' AS arch,'' AS manager
+                FROM asset_products WHERE asset_id=?
+                UNION ALL
+                SELECT id,asset_id,vendor,name,version,'' AS created_at,'imported' AS origin,
+                       epoch,release,arch,manager
+                FROM imported_products WHERE asset_id=?
+                ) ORDER BY name COLLATE NOCASE,version
+            """, (asset_id, asset_id)).fetchall()]
 
     def delete_product(self, product_id: str) -> None:
         with self._db() as conn:
@@ -239,10 +279,18 @@ class AssetRepository(VulnerabilityRepository):
         with self._db() as conn:
             self._profile_exists(conn, profile_id)
             products = [dict(row) for row in conn.execute("""
-                SELECT s.*, a.name AS asset_name, a.profile_id
+                SELECT * FROM (
+                SELECT s.id,s.asset_id,s.vendor,s.name,s.version,
+                       a.name AS asset_name,a.profile_id
                 FROM asset_products s JOIN assets a ON s.asset_id=a.id
-                WHERE a.profile_id=? ORDER BY a.name,s.name
-            """, (profile_id,)).fetchall()]
+                WHERE a.profile_id=?
+                UNION ALL
+                SELECT s.id,s.asset_id,s.vendor,s.name,s.version,
+                       a.name AS asset_name,a.profile_id
+                FROM imported_products s JOIN assets a ON s.asset_id=a.id
+                WHERE a.profile_id=?
+                ) ORDER BY asset_name,name
+            """, (profile_id, profile_id)).fetchall()]
             cvss = conn.execute(
                 "SELECT id,title,raw_json FROM vulnerabilities ORDER BY id LIMIT ?", (max_cves + 1,)
             ).fetchall()

@@ -14,6 +14,7 @@ import httpx
 from playwright.sync_api import sync_playwright
 
 from vulnfolio.asset_storage import AssetRepository
+from vulnfolio.adapters.ansible import AnsibleAdapter
 from vulnfolio.vulnerabilities import from_cve_record
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -91,9 +92,34 @@ def main():
                 page.locator("#include-closed").check()
                 page.locator("#candidate-rows").get_by_text(CVE).wait_for(state="attached", timeout=10000)
                 assert page.locator("#candidate-rows select").input_value() == "mitigated"
+
+                # A second profile proves that importing a canonical collector
+                # envelope creates assets and candidates without manual entry.
+                page.locator("#profile-name").fill("Import Project")
+                page.get_by_role("button", name="Add profile").click()
+                page.locator("#profile-select option", has_text="Import Project").wait_for(
+                    state="attached", timeout=10000
+                )
+                profile_id = page.locator("#profile-id").inner_text()
+                assert len(profile_id) == 32
+                incoming = json.loads((ROOT / "tests" / "fixtures" / "ansible.json").read_text())
+                incoming["hosts"]["rhel-demo"]["ansible_facts"]["packages"]["fluxctl"] = [
+                    {"name": "fluxctl", "version": "1.2.0", "source": "rpm"}
+                ]
+                envelope = AnsibleAdapter().normalize(incoming, profile_id)
+                page.locator("#import-file").set_input_files({
+                    "name": "collected.json",
+                    "mimeType": "application/json",
+                    "buffer": json.dumps(envelope).encode("utf-8"),
+                })
+                page.get_by_role("button", name="Import to selected profile").click()
+                page.get_by_text("Imported: 2 assets", exact=False).wait_for(timeout=10000)
+                page.locator("#candidate-rows").get_by_text(CVE).wait_for(timeout=10000)
+                assert "vendor unverified" in page.locator("#candidate-rows").inner_text()
+                assert "imported" in page.locator("#product-rows").inner_text().lower()
                 assert not errors, errors
                 browser.close()
-            print("M1 BROWSER PASS: create profile -> asset -> software -> candidate -> mitigate -> reload")
+            print("M1 BROWSER PASS: manual profile/asset/assessment + canonical JSON upload -> candidates")
         finally:
             server.terminate()
             try:

@@ -22,9 +22,9 @@ uvicorn vulnfolio.vulnerability_api:app --host 127.0.0.1 --port 8000
 - **My Environment:** http://127.0.0.1:8000/environment
 - REST API docs: http://127.0.0.1:8000/docs
 
-My Environmentでは、案件Profile→Asset→Installed Softwareを手動登録し、ローカルに保存したCVEの構造化`affected`情報に基づく**影響候補**を表示できます。案件別の対応状況も記録します。候補は影響確定ではなく、OSベンダーのバックポート/KB判定はまだできません。
+My Environmentでは、案件Profile→Asset→Installed Softwareを手動登録、または**共通JSONを手動インポート**し、ローカルに保存したCVEの構造化`affected`情報に基づく**影響候補**を表示できます。案件別の対応状況も記録します。候補は影響確定ではなく、OSベンダーのバックポート/KB判定はまだできません。
 
-**認証機能はありません。ループバックのみで起動し、顧客の機密資産データを投入しないでください。** [M1の詳細・制約](docs/poc-m1.md)。
+**認証機能はありません。ループバックのみで起動し、顧客の機密資産データを投入しないでください。** [M1手動管理](docs/poc-m1.md) / [収集JSONインポート](docs/poc-m1-import.md)。
 
 取得元が利用できない場合でも、既存のローカル保存データは表示できます。PoCには認証を実装していないため**インターネット公開しない**でください。UIはTablerのバージョン固定CDNを使用しています。
 
@@ -49,6 +49,7 @@ My Environmentでは、案件Profile→Asset→Installed Softwareを手動登録
 | [モジュール化設計](docs/modularity.md) | プラグイン境界・共通API・機能差異の吸収方針 |
 | [M0 PoC](docs/poc-m0.md) | 最小CVEデータ取得・SQLite・REST・Web UIの実装と制限 |
 | [M1a PoC](docs/poc-m1.md) | ローカル案件・資産登録、影響候補、対応履歴、権限上の制限 |
+| [M1b JSONインポート](docs/poc-m1-import.md) | 収集JSONをProfileへ手動アップロード・冪等取込する手順 |
 | [Phase 0 PoC](docs/poc-phase0.md) | 3種類の収集レポートの共通変換・検証結果・制約 |
 | [OSS比較](docs/oss-comparison.md) | Vulnerability-Lookup vs OpenCTI、選定根拠 |
 | [収集方式・データ契約](docs/data-ingestion.md) | SNS、エージェントレス資産収集、JSON仕様案 |

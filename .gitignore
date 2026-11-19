@@ -12,3 +12,7 @@ local-reports/
 
 # Local vulnerability dataset: avoid accidentally publishing fetched/raw records.
 data/
+
+# Canonical inventory exported from a bastion is private by default.
+collected-normalized.json
+collected-*.json

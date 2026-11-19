@@ -1,6 +1,7 @@
 """Private M1 profile/asset APIs. Local-only gate is not full authentication."""
 from __future__ import annotations
 
+import json
 from ipaddress import ip_address
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
 
 from vulnfolio.asset_storage import AssetRepository, Conflict, NotFound
+from vulnfolio.inventory_import import InventoryImporter, ImportValidationError
 
 PRIVATE_PREFIX = "/api/v1"
 
@@ -68,6 +70,7 @@ def translate_error(error: Exception) -> None:
 
 
 def build_asset_router(repo: AssetRepository) -> APIRouter:
+    importer = InventoryImporter(repo)
     router = APIRouter(prefix=PRIVATE_PREFIX, dependencies=[Depends(require_local)],
                        tags=["Private inventory (local-only PoC)"])
 
@@ -124,6 +127,42 @@ def build_asset_router(repo: AssetRepository) -> APIRouter:
         except NotFound as exc:
             translate_error(exc)
         return Response(status_code=204)
+
+    @router.post("/profiles/{profile_id}/imports", status_code=201)
+    async def import_inventory(profile_id: str, request: Request):
+        """Accept a validated canonical JSON envelope, never scanner-specific raw output."""
+        if not request.headers.get("content-type", "").lower().startswith("application/json"):
+            raise HTTPException(status_code=415, detail="Content-Type must be application/json")
+        maximum = 2 * 1024 * 1024
+        chunks = []
+        total = 0
+        async for chunk in request.stream():
+            total += len(chunk)
+            if total > maximum:
+                raise HTTPException(status_code=413, detail="Maximum upload size is 2 MiB")
+            chunks.append(chunk)
+        try:
+            document = json.loads(b"".join(chunks).decode("utf-8"))
+        except (UnicodeDecodeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail="Invalid UTF-8 JSON envelope") from exc
+        try:
+            return importer.import_envelope(profile_id, document)
+        except (ImportValidationError, NotFound, ValueError) as exc:
+            translate_error(exc)
+
+    @router.get("/profiles/{profile_id}/imports")
+    def imports(profile_id: str):
+        try:
+            return {"data": importer.list_imports(profile_id)}
+        except NotFound as exc:
+            translate_error(exc)
+
+    @router.get("/assets/{asset_id}/inventory")
+    def inventory_snapshot(asset_id: str):
+        try:
+            return {"snapshot": importer.asset_snapshot(asset_id)}
+        except NotFound as exc:
+            translate_error(exc)
 
     @router.get("/profiles/{profile_id}/candidates")
     def candidates(profile_id: str, include_closed: bool = False):
