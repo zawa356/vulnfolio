@@ -1,0 +1,26 @@
+{
+  "dataType": "CVE_RECORD",
+  "dataVersion": "5.1",
+  "cveMetadata": {
+    "cveId": "CVE-2099-12345",
+    "state": "PUBLISHED",
+    "datePublished": "2099-01-02T03:04:05Z",
+    "dateUpdated": "2099-01-03T03:04:05Z"
+  },
+  "containers": {
+    "cna": {
+      "title": "Example synthetic vulnerability",
+      "descriptions": [
+        {"lang": "en", "value": "Synthetic record for tests only. <script>unexpected code</script>."}
+      ],
+      "metrics": [
+        {"cvssV3_1": {"version": "3.1", "baseScore": 8.1, "baseSeverity": "HIGH"}}
+      ],
+      "references": [
+        {"url": "https://example.invalid/security/CVE-2099-12345"},
+        {"url": "javascript:alert(1)"},
+        {"url": "https://example.invalid/security/CVE-2099-12345"}
+      ]
+    }
+  }
+}
