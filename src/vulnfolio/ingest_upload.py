@@ -67,6 +67,7 @@ def envelope_bytes(path: Path, profile_id: str) -> bytes:
 def send(
     base_url: str, profile_id: str, document: bytes, token: str,
     ca_file: Path | None = None, attempts: int = 3,
+    _transport: httpx.BaseTransport | None = None,
 ) -> dict:
     url = endpoint_url(base_url, profile_id)
     if not 1 <= attempts <= 5:
@@ -86,7 +87,8 @@ def send(
         "User-Agent": "vulnfolio-collector/0.2",
     }
     # trust_env=False avoids unintended environment proxying of bearer secrets.
-    with httpx.Client(verify=context, trust_env=False, follow_redirects=False, timeout=12) as client:
+    with httpx.Client(verify=context, trust_env=False, follow_redirects=False, timeout=12,
+                      transport=_transport) as client:
         for attempt in range(1, attempts + 1):
             try:
                 result = client.post(url, content=document, headers=headers)
