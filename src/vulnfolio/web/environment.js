@@ -153,7 +153,7 @@ async function loadCandidates() {
                          (candidate.installed_version ? " " + candidate.installed_version : ""));
     const cve = document.createElement("td");
     const link = document.createElement("a");
-    link.href = "/#detail";
+    link.href = "/?cve=" + encodeURIComponent(candidate.cve_id);
     link.textContent = candidate.cve_id;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
