@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      VULNFOLIO_DB: ${{ runner.temp }}/vulnfolio-live-smoke.db
+      VULNFOLIO_DB: /tmp/vulnfolio-live-smoke.db
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
