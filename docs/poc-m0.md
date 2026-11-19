@@ -89,6 +89,9 @@ UIは既存Bootstrap系キット[Tabler](https://github.com/tabler/tabler)の標
 
 - **実測:** `GET https://vulnerability.circl.lu/api/vulnerability/CVE-2024-3094` がHTTP成功し、`dataType=CVE_RECORD`、`dataVersion=5.2`、`cveMetadata.cveId`、`cveMetadata.datePublished`、`dateUpdated`、`containers.cna.descriptions`等を確認。
 - **機械可読ポリシー実測:** [/.well-known/api-policy.json](https://vulnerability.circl.lu/.well-known/api-policy.json) に匿名20リクエスト/分、認証40リクエスト/分と表示。User-Agentで自動クライアントを識別し、APIを列挙してミラーしないこと。差分同期には `/api/vulnerability/?since=...` を利用。
+- **EPSS実測:** `GET /api/epss/CVE-2024-3094` は `status:OK` と `data[0].cve/epss/percentile/date` を含むJSONを返した。EPSS値は取得時点のものであり、独自予測とは別データとして扱う。
+- **Sightings実測:** `GET /api/sighting/?vuln_id=CVE-2024-3094&per_page=1` は `metadata` と `data` のページング形式。各件に `type`、`source`、`creation_timestamp`、`vulnerability` 等がある。
+- **差分取得の形状実測:** `GET /api/vulnerability/?since=2026-11-18&per_page=1` は少なくとも当該応答で **JSON配列** を返し、CVE Record以外（例：PYSEC/OSV形式）も含む。これをそのままM0のCVE Recordアダプターへ流し込んではいけない。次段階の増分同期では形式別アダプターを経由する。
 - 既存公式ドキュメント: [API](https://www.vulnerability-lookup.org/documentation/api.html) / [Access patterns](https://www.vulnerability-lookup.org/documentation/access-patterns.html)
 - **PoCではID指定の手動同期のみ**、1実行最大10件、429時は追加リクエストを止める。自動ループ・全件スキャンは行わない。
 - API上流が停止しても既存DBは保持。Healthは最後の同期結果と最終成功時刻を返し、**リアルタイムの上流稼働判定はしない**。
