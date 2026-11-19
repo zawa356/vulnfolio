@@ -29,5 +29,7 @@ jobs:
         run: python -m compileall -q src tests
       - name: Check browser JavaScript syntax
         run: node --check src/vulnfolio/web/app.js
+      - name: Check M1 private UI JavaScript syntax
+        run: node --check src/vulnfolio/web/environment.js
       - name: Run offline normalization + M0 API tests
         run: python -m unittest discover -s tests -v
