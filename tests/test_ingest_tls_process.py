@@ -56,7 +56,7 @@ class HTTPSProcessTests(unittest.TestCase):
             env = dict(os.environ, VULNFOLIO_DB=str(db),
                        VULNFOLIO_INGEST_TOKENS_FILE=str(auth_store))
             server = subprocess.Popen([
-                sys.executable, "-m", "uvicorn", "vulnfolio.vulnerability_api:app",
+                sys.executable, "-m", "uvicorn", "vulnfolio.ingest_server:app",
                 "--host", "127.0.0.1", "--port", str(port),
                 "--ssl-keyfile", str(key), "--ssl-certfile", str(cert),
                 "--no-proxy-headers", "--log-level", "error",
@@ -66,7 +66,7 @@ class HTTPSProcessTests(unittest.TestCase):
                     for _ in range(80):
                         self.assertIsNone(server.poll(), "HTTPS server exited before readiness")
                         try:
-                            if client.get(origin + "/api/v1/health").status_code == 200:
+                            if client.get(origin + "/api/v1/health").status_code == 404:
                                 break
                         except httpx.TransportError:
                             pass
@@ -74,6 +74,13 @@ class HTTPSProcessTests(unittest.TestCase):
                     else:
                         self.fail("Local Uvicorn TLS server never became ready")
 
+                # The actual TCP/TLS listener must NOT expose administrative routes,
+                # even to a local caller. Probe using the TLS process itself.
+                with httpx.Client(verify=str(cert), trust_env=False, timeout=3) as client:
+                    for path in ("/", "/api/v1/health", "/api/v1/vulnerabilities",
+                                 "/api/v1/profiles", "/environment", "/docs",
+                                 "/openapi.json", "/static/app.js"):
+                        self.assertEqual(client.get(origin + path).status_code, 404, path)
                 # The normal uploader CLI (not TestClient) performs a verified
                 # HTTP round-trip and should write a single batch to SQLite.
                 cmd = [
