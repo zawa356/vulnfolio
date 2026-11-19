@@ -161,3 +161,7 @@ $("next").addEventListener("click", () => {if (state.page * state.perPage < stat
 $("close-detail").addEventListener("click", () => $("detail").classList.add("d-none"));
 loadHealth();
 loadList();
+const requestedCVE = new URLSearchParams(window.location.search).get("cve");
+if (requestedCVE && /^CVE-\\d{4}-\\d{4,}$/i.test(requestedCVE)) {
+  showDetail(requestedCVE.toUpperCase());
+}
