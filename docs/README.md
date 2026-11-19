@@ -30,7 +30,7 @@
 
 **M1c（コード実装・実機未検証）:** Linux/WindowsのAnsible/PowerShell読み取り収集→既存共通JSONのローカル出力（[詳細](poc-m1c-agentless.md)）。
 
-**M1c HTTPS送信PoC:** Profile単位トークン認証、証明書検証、再送、既存Importerへの接続（[実装・試験と制約](poc-m1c-https.md)）。**ローカル実TLSのみ検証、LAN/本番未対応。**
+**M1c HTTPS送信PoC:** **管理アプリと独立した受信専用ASGIアプリ**、Profile単位トークン認証、証明書検証、再送、既存Importerへの接続（[実装・試験と制約](poc-m1c-https.md)）。**ローカル実TLSのみ検証、LAN/本番未対応。**
 
 **今後:** Linux/Windowsの権限ある実機での受入とLAN転送の検証、CVEとの厳密な影響判断（OSベンダーバックポート/Windows KB）、SNS観測、LLM予測、通知、MCP、認証付き公開。
 
