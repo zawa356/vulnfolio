@@ -84,6 +84,7 @@ async function loadProfiles(preferred = state.profile) {
   state.profile = result.data.some((item) => item.id === preferred)
     ? preferred : (result.data[0]?.id || "");
   select.value = state.profile;
+  byId("profile-id").textContent = state.profile || "—";
   await loadAssets();
 }
 
@@ -95,6 +96,8 @@ async function loadAssets(preferred = state.asset) {
     resetRows("product-rows", 4, "Create a profile and asset first.");
     resetRows("candidate-rows", 4, "Create a profile first.");
     byId("coverage").textContent = "No profile selected.";
+    byId("profile-id").textContent = "—";
+    byId("inventory-snapshot").textContent = "No collected inventory.";
     byId("import-history").textContent = "";
     return;
   }
@@ -105,7 +108,20 @@ async function loadAssets(preferred = state.asset) {
   state.asset = result.data.some((item) => item.id === preferred)
     ? preferred : (result.data[0]?.id || "");
   select.value = state.asset;
-  await Promise.all([loadProducts(), loadCandidates(), loadImportHistory()]);
+  await Promise.all([loadProducts(), loadCandidates(), loadImportHistory(), loadInventorySnapshot()]);
+}
+
+async function loadInventorySnapshot() {
+  if (!state.asset) {
+    byId("inventory-snapshot").textContent = "No collected inventory.";
+    return;
+  }
+  const result = await api("/api/v1/assets/" + encodeURIComponent(state.asset) + "/inventory");
+  const snap = result.snapshot;
+  byId("inventory-snapshot").textContent = snap ?
+    "Collected: " + snap.collector + " · " + (snap.observed_at || snap.imported_at) +
+    " · KB/patch IDs: " + (snap.patches.length ? snap.patches.join(", ") : "not reported") :
+    "No imported inventory for this asset.";
 }
 
 async function loadProducts() {
@@ -281,12 +297,13 @@ byId("product-form").addEventListener("submit", (event) => {
 });
 byId("profile-select").addEventListener("change", () => {
   state.profile = byId("profile-select").value;
+  byId("profile-id").textContent = state.profile || "—";
   state.asset = "";
   runAction(() => loadAssets(), "");
 });
 byId("asset-select").addEventListener("change", () => {
   state.asset = byId("asset-select").value;
-  runAction(() => loadProducts(), "");
+  runAction(() => Promise.all([loadProducts(), loadInventorySnapshot()]), "");
 });
 byId("include-closed").addEventListener("change", () => {
   runAction(() => loadCandidates(), "");
