@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>vulnfolio | Vulnerability Intelligence</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.7.5/dist/css/tabler.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/@tabler/core@1.7.5/dist/js/tabler.min.js"></script>
+  <script defer src="/static/app.js"></script>
+</head>
+<body>
+<div class="page">
+  <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+    <div class="container-fluid">
+      <h1 class="navbar-brand navbar-brand-autodark">
+        <a href="/" class="text-decoration-none">vulnfolio</a>
+      </h1>
+      <div class="collapse navbar-collapse show">
+        <ul class="navbar-nav pt-lg-3">
+          <li class="nav-item active"><a href="/" class="nav-link" aria-current="page"><span class="nav-link-title">Global vulnerabilities</span></a></li>
+          <li class="nav-item"><span class="nav-link disabled" aria-disabled="true"><span class="nav-link-title">Threat signals (planned)</span></span></li>
+          <li class="nav-item"><span class="nav-link disabled" aria-disabled="true"><span class="nav-link-title">My environment (planned)</span></span></li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+  <div class="page-wrapper">
+    <header class="navbar navbar-expand-md d-print-none">
+      <div class="container-xl">
+        <div class="navbar-nav flex-row order-md-last">
+          <a href="/docs" class="nav-link" target="_blank" rel="noopener noreferrer">REST API docs</a>
+          <a href="https://github.com/zawa356/vulnfolio" class="nav-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </div>
+        <div class="navbar-nav">
+          <span class="nav-link">Vulnerability Intelligence — M0 PoC</span>
+        </div>
+      </div>
+    </header>
+    <main class="page-body">
+      <div class="container-xl">
+        <div class="page-header d-print-none">
+          <div class="row g-2 align-items-center">
+            <div class="col">
+              <div class="page-pretitle">Global intelligence</div>
+              <h2 class="page-title">Vulnerabilities</h2>
+            </div>
+            <div class="col-auto ms-auto">
+              <button type="button" id="reload" class="btn btn-outline-secondary">Reload</button>
+            </div>
+          </div>
+        </div>
+        <div id="alert" role="alert" class="alert alert-warning d-none"></div>
+        <div class="row row-deck row-cards mb-3">
+          <div class="col-sm-6 col-lg-4">
+            <div class="card">
+              <div class="card-body">
+                <div class="subheader">Stored vulnerabilities</div>
+                <div class="h1 mb-1" id="count">—</div>
+                <div class="text-secondary small">Local dataset (not the global CVE count)</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-sm-6 col-lg-4">
+            <div class="card">
+              <div class="card-body">
+                <div class="subheader">Last successful fetch</div>
+                <div class="h4 mb-1" id="last-success">—</div>
+                <div class="text-secondary small">Vulnerability-Lookup</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-sm-12 col-lg-4">
+            <div class="card">
+              <div class="card-body">
+                <div class="subheader">Source status</div>
+                <div class="h4 mb-1"><span id="source-status" class="badge bg-secondary-lt">Not checked</span></div>
+                <div class="text-secondary small">Last sync outcome; not a live availability probe</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <section class="card" aria-labelledby="list-title">
+          <div class="card-header">
+            <h3 class="card-title" id="list-title">Collected CVEs</h3>
+            <div class="card-actions">
+              <form id="search-form" role="search">
+                <label class="visually-hidden" for="q">Search collected vulnerabilities</label>
+                <input class="form-control" type="search" id="q" maxlength="200" placeholder="CVE ID / title / description">
+              </form>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+              <thead><tr><th>CVE</th><th>Title</th><th>CVSS</th><th>Source</th><th>Updated (UTC)</th></tr></thead>
+              <tbody id="vulnerability-rows"><tr><td colspan="5" class="text-secondary">Loading…</td></tr></tbody>
+            </table>
+          </div>
+          <div class="card-footer d-flex align-items-center">
+            <span class="text-secondary" id="pagination-count">—</span>
+            <div class="ms-auto d-flex gap-2">
+              <button id="prev" type="button" class="btn btn-outline-secondary btn-sm" disabled>Previous</button>
+              <button id="next" type="button" class="btn btn-outline-secondary btn-sm" disabled>Next</button>
+            </div>
+          </div>
+        </section>
+        <section id="detail" class="card mt-3 d-none" aria-live="polite" aria-labelledby="detail-title">
+          <div class="card-header">
+            <h3 class="card-title" id="detail-title">Vulnerability details</h3>
+            <div class="card-actions"><button type="button" class="btn btn-sm btn-outline-secondary" id="close-detail">Close</button></div>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12"><div class="subheader">Description</div><p id="detail-description" class="mb-0" style="white-space:pre-wrap"></p></div>
+              <div class="col-md-4"><div class="subheader">Published</div><div id="detail-published">—</div></div>
+              <div class="col-md-4"><div class="subheader">Last updated</div><div id="detail-updated">—</div></div>
+              <div class="col-md-4"><div class="subheader">Fetched</div><div id="detail-fetched">—</div></div>
+              <div class="col-12"><div class="subheader">References (external)</div><ul id="detail-references" class="mb-0"></ul></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+    <footer class="footer footer-transparent d-print-none">
+      <div class="container-xl text-secondary small">vulnfolio M0 · Data is not a proof of exploitability or exposure. Local PoC only.</div>
+    </footer>
+  </div>
+</div>
+</body>
+</html>

@@ -9,3 +9,6 @@ __pycache__/
 # Real asset inventories and scan results are sensitive. Keep fixtures synthetic.
 private-data/
 local-reports/
+
+# Local vulnerability dataset: avoid accidentally publishing fetched/raw records.
+data/

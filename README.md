@@ -6,6 +6,24 @@ CVE/KEV/EPSS等の公式データと、SNS・セキュリティコミュニテ�
 
 > **状態（2026-11-19）：要件調査・アーキテクチャ検討段階。** 現時点の採用技術は決定ではなく、PoCで検証してから固定します。
 
+## Quick start — M0 PoC
+
+Python 3.11+。Vulnerability-Lookupの公開APIから**少数の指定CVEだけ**取得し、SQLite→REST API→Tabler画面で確認できます。
+
+```bash
+python -m venv .venv
+. .venv/bin/activate
+python -m pip install -e .
+python -m vulnfolio.vulnerability_sync --id CVE-2024-3094
+uvicorn vulnfolio.vulnerability_api:app --host 127.0.0.1 --port 8000
+```
+
+Web: http://127.0.0.1:8000 / API docs: http://127.0.0.1:8000/docs
+
+取得元が利用できない場合でも、既存のローカル保存データは表示できます。PoCには認証を実装していないため**インターネット公開しない**でください。UIはTablerのバージョン固定CDNを使用しています。
+
+[詳しい操作・構成・実API調査・既知の制限](docs/poc-m0.md)。
+
 ## 目標
 
 - 製品・ベンダーを事前に限定せず、脆弱性情報を横断収集・検索する。
@@ -23,6 +41,7 @@ CVE/KEV/EPSS等の公式データと、SNS・セキュリティコミュニテ�
 | [要件定義（決定事項・将来要件）](docs/requirements.md) | 機能・非機能・データの扱い |
 | [アーキテクチャ案](docs/architecture.md) | 独自中間レイヤー、DB、API、収集・AI分析 |
 | [モジュール化設計](docs/modularity.md) | プラグイン境界・共通API・機能差異の吸収方針 |
+| [M0 PoC](docs/poc-m0.md) | 最小CVEデータ取得・SQLite・REST・Web UIの実装と制限 |
 | [Phase 0 PoC](docs/poc-phase0.md) | 3種類の収集レポートの共通変換・検証結果・制約 |
 | [OSS比較](docs/oss-comparison.md) | Vulnerability-Lookup vs OpenCTI、選定根拠 |
 | [収集方式・データ契約](docs/data-ingestion.md) | SNS、エージェントレス資産収集、JSON仕様案 |
