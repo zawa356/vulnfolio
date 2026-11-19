@@ -2,8 +2,8 @@
 
 - 2026-11-19
 - 対応: [M0 Epic #3](https://github.com/zawa356/vulnfolio/issues/3)
-- スコープ: **1種類の実データソースを使った「動く縦スライス」**
-- 実装中の機能をM0として扱う。SNS/LLM/案件照合/大規模同期は対象外。
+- スコープ: **1種類の実データソースを使った「動く縦スライス」**（[PR #14](https://github.com/zawa356/vulnfolio/pull/14)、[受入PR #17](https://github.com/zawa356/vulnfolio/pull/17) で完了）
+- この文書は**M0完成時点の記録**。SNS/LLM/案件照合/大規模同期はM0対象外。案件管理は後のM1a/M1bで追加済み。
 
 ## 構成
 
@@ -16,7 +16,7 @@ flowchart LR
   API --> UI["Tabler UI"]
 ```
 
-既存のAnsible/Vuls/OpenVASアダプターは別モジュールであり、現在はDBとの連携はしていない。M1で同じアプリケーションサービス層へ接続する。
+既存のAnsible/Vuls/OpenVASアダプターは別モジュールであり、Phase 0ではDBとの連携はしていなかった。**M1bで`AssetObservation`のローカルJSON手動インポートを接続済み**（[実装](poc-m1-import.md)）。Vuls/OpenVASのFinding取込は未実装。
 
 ## 起動
 
@@ -103,16 +103,20 @@ UIは既存Bootstrap系キット[Tabler](https://github.com/tabler/tabler)の標
 - KEV/EPSS/SightingsはM0の公式API調査対象だが、**現段階でUIへ統合していない**。取得と表示は次のIssueへ。
 - オンライン取得は手動ID指定のみ。ソース全件/増分同期は未実装。
 - SQLiteはM0の単一ノード小規模PoC用。PostgreSQL移行時もレコード/アダプター契約は維持する。
-- 認証/権限制御、公開ホスティング、複数ユーザー、書き込みAPIは未実装。**127.0.0.1でのみ起動すること**。
+- **M0のグローバルCVE APIは読み取り専用**。M1a/M1bでは**ローカル限定の案件情報書き込みAPIを追加済み**だが、認証/利用者分離/公開ホスティングは未実装。**127.0.0.1でのみ起動すること**。
 - 最終成功日時を記録するが、元データの正しさや実機への影響を保証しない。
 - 開発時のネットワーク制限がある場合はモックのCIテストで再現する。**合成テストと公開API実測の区別を明記する**。
 
+## M0受入結果（完了、2026-11-19）
+
+[実CVEからHTTP/HTMLまでのGitHub Actions成功](https://github.com/zawa356/vulnfolio/actions/runs/44445355711) と [Chromium受入テスト成功](https://github.com/zawa356/vulnfolio/actions/runs/44446167894) を証跡とする。
+
 ## 受入チェック
 
-- [ ] GitHub CI（Python 3.11/3.13）で既存アダプター＋M0テストが成功
-- [ ] 実CVEsの少数手動同期→DBにupsert
-- [ ] `GET /api/v1/vulnerabilities` / 個別詳細 / health が正しく動く
-- [ ] Tabler画面から一覧・検索・詳細・更新状態を確認
-- [ ] 同一ID再実行で重複ゼロ
-- [ ] 上流失敗時に古いレコードを失わず、異常状態を画面に出せる
-- [ ] 実際にサーバーを起動したE2E手順が記録されている
+- [x] GitHub CI（Python 3.11/3.13）で既存アダプター＋M0テストが成功
+- [x] 実CVEsの少数手動同期→DBにupsert
+- [x] `GET /api/v1/vulnerabilities` / 個別詳細 / health が正しく動く
+- [x] Tabler画面から一覧・検索・詳細・更新状態を確認
+- [x] 同一ID再実行で重複ゼロ
+- [x] 上流失敗時に古いレコードを失わず、異常状態を画面に出せる
+- [x] 実際にサーバーを起動したE2E手順が記録されている

@@ -75,43 +75,34 @@ flowchart LR
   P --> M["脆弱性候補の照合"]
 ```
 
-### 収集JSONの例（**最終仕様ではない**）
+### 実装済みの収集JSON契約（v0.1.0）
+
+**現行版の正本は[CollectionEnvelope v0.1.0](contracts/collection-envelope-v0.1.md)**（[コード](../src/vulnfolio/contracts.py)）です。以下は**実装に合う簡略例**であり、当初の`schema_version: 0.1-draft`、`profile_ref`、`assets`を用いた旧案は現行Importerに受理されません。
 
 ```json
 {
-  "schema_version": "0.1-draft",
-  "collection_id": "8fa16ae3-3a2f-4947-a8b6-2b73ff4f7103",
-  "collected_at": "2026-11-19T00:00:00Z",
-  "profile_ref": "example-profile",
-  "collector": {
-    "name": "vulnfolio-agentless",
-    "version": "0.0.0-proposal"
-  },
-  "assets": [
-    {
-      "external_asset_id": "server-001",
-      "host_type": "server",
-      "os": {
-        "family": "linux",
-        "distribution": "ubuntu",
-        "version": "24.04",
-        "architecture": "amd64"
-      },
-      "software": [
-        {
-          "name": "openssl",
-          "version": "example-version",
-          "package_manager": "dpkg",
-          "source": "package_facts"
-        }
-      ],
-      "patches": []
-    }
-  ]
+  "schema_version": "0.1.0",
+  "profile_id": "profile-id-from-web",
+  "collector": {"driver": "ansible", "capabilities": ["asset_inventory", "installed_packages", "windows_kb"]},
+  "observed_at": "2026-11-19T00:00:00Z",
+  "status": "success",
+  "observations": [{
+    "asset_id": "test-linux",
+    "os": {"family": "Debian", "distribution": "Ubuntu", "version": "24.04", "build": null},
+    "packages": [{"name": "openssl", "version": "example", "epoch": null, "release": null, "arch": "amd64", "manager": "apt"}],
+    "patches": [],
+    "inventory_scope": "reported",
+    "source": "ansible"
+  }],
+  "findings": [],
+  "errors": []
 }
 ```
 
-※ この例のソフトのバージョンはダミー。実際にはパッケージのrelease/epoch/アーキテクチャ、Windowsビルド/KB/製品識別情報、取得成否などが必要になる。
+- `observations`は資産観測、`findings`はスキャナーの判定で別物です。
+- M1bの**ローカル手動インポートは実装済み**。`findings`が1件でもある場合は全件拒否。Vuls/OpenVASのFindingは未対応。
+- **実機からの自動取得・認証付きHTTPS送信は未実装**。Issue #24/#27で進行管理します。
+- `os.build`は現行Importerで入力検証のみ実施し、AssetのDB列には保存していません。Windows OSビルド照合は今後の課題。
 
 ### 正規化・照合の注意点
 
