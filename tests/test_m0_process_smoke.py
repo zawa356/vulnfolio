@@ -99,7 +99,7 @@ class ProcessSmokeTests(unittest.TestCase):
                     detail = client.get(base + "/api/v1/vulnerabilities/" + ID).json()
                     self.assertEqual(detail["cvss_score"], 8.1)
                     self.assertEqual(client.get(base + "/").status_code, 200)
-                    self.assertIn("Tabler", client.get(base + "/").text)
+                    self.assertIn("@tabler/core@1.7.5", client.get(base + "/").text)
                     self.assertEqual(client.get(base + "/static/app.js").status_code, 200)
             finally:
                 if server is not None:
