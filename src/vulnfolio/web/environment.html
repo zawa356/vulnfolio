@@ -47,7 +47,8 @@
               <div class="card-header"><h3 class="card-title">Profiles</h3></div>
               <div class="card-body">
                 <label for="profile-select" class="form-label">Active project / profile</label>
-                <select id="profile-select" class="form-select mb-3"><option value="">No profiles yet</option></select>
+                <select id="profile-select" class="form-select mb-2"><option value="">No profiles yet</option></select>
+                <div class="text-secondary small mb-3">Profile ID for collector CLI: <code id="profile-id">—</code></div>
                 <form id="profile-form">
                   <div class="row g-2">
                     <div class="col-md-8">
@@ -67,7 +68,8 @@
               <div class="card-header"><h3 class="card-title">Assets</h3></div>
               <div class="card-body">
                 <label for="asset-select" class="form-label">Selected asset</label>
-                <select id="asset-select" class="form-select mb-3"><option value="">No assets yet</option></select>
+                <select id="asset-select" class="form-select mb-2"><option value="">No assets yet</option></select>
+                <div class="text-secondary small mb-3" id="inventory-snapshot">No collected inventory.</div>
                 <form id="asset-form">
                   <div class="row g-2">
                     <div class="col-md-5">
