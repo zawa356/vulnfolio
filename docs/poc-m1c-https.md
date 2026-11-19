@@ -2,7 +2,7 @@
 
 - 対応: [Issue #31](https://github.com/zawa356/vulnfolio/issues/31) / 親 [#24](https://github.com/zawa356/vulnfolio/issues/24)
 - 状態: **ローカルの本物のTLS（Uvicorn）で検証するPoC**。LAN/Internetへの本番公開を許可するものではありません。
-- 成果: Agentless収集の共通JSONを、**実HTTPS + ProfileスコープのBearer Token**で既存M1b Importerに渡す。通信失敗時は元JSONを残し、同一JSONは重複保存しない。
+- 成果: **独立したHTTPS受信専用アプリ（`vulnfolio.ingest_server:app`）**でAgentless収集の共通JSONをProfileスコープのBearer Tokenにより既存M1b Importerへ渡す。通信失敗時は元JSONを残し、同一JSONは重複保存しない。
 - 非対象: 実ホストへのSSH/WinRM接続試験（#30）、SaaS向けユーザー認証、複数利用者管理、本番用公開Ingress/Reverse Proxy、監視/WAF/分散レート制限。
 
 ## 境界とデータフロー
@@ -18,7 +18,7 @@ flowchart LR
   G --> E
 ```
 
-既存の`POST /api/v1/profiles/{id}/imports`、Profile/Asset/Assessmentの取得・変更APIおよび`/environment`は**ループバック限定のまま**です。新しいBearer Tokenは**指定ProfileのJSONインポート権限だけ**を付与し、資産閲覧や対応状況の変更を許可しません。
+既存の`POST /api/v1/profiles/{id}/imports`、Profile/Asset/Assessmentの取得・変更APIおよび`/environment`は**管理用`vulnfolio.vulnerability_api:app`にのみ登録し、ループバック限定**です。受信専用`vulnfolio.ingest_server:app`には**JSONアップロードのPOSTルートだけ**を登録します。CVE閲覧、Profile/Asset、My Environment、Swagger、OpenAPI、静的ファイル、healthルートは**存在しません（404）**。Tokenは指定Profileのインポート書き込みにだけ使用できます。
 
 ## 1. 認証設計
 
@@ -32,7 +32,7 @@ flowchart LR
 
 ## 2. ローカルHTTPS検証の起動例
 
-先に既存M1aの**ループバック専用HTTP**でProfileを作成し、そのIDを取得してから、HTTPプロセスを停止してHTTPSサービスを起動します。同じ`VULNFOLIO_DB`を使うこと。
+先に既存M1aの**ループバック専用管理アプリ**でProfileを作成してIDを取得します。その後、**同一SQLiteを参照する別の受信専用アプリ**をHTTPSで起動します。ローカル管理アプリは`127.0.0.1`バインドを維持し、リモートからは接続させません。受信アプリは管理アプリとは**別プロセス・別ポート**です。SQLiteの単一ノードPoCを超える構成や同時大量書込みは未対応です。
 
 ### 2.1 テスト用の証明書
 
@@ -68,22 +68,24 @@ python -m vulnfolio.ingest_credentials list --store private-data/auth/tokens.jso
 - 失効: `python -m vulnfolio.ingest_credentials revoke --store private-data/auth/tokens.json --id <token-id>`。
 - トークンをコマンド引数・環境変数・GitHub Actionsの平文ログに直接入れないこと。
 
-### 2.3 UvicornをDirect TLSで起動
+### 2.3 **受信専用**UvicornをDirect TLSで起動
 
 ```bash
 export VULNFOLIO_INGEST_TOKENS_FILE="$PWD/private-data/auth/tokens.json"
 # 既存DBの場所は従来どおり VULNFOLIO_DB（省略時はdata/vulnfolio.db）
 
-uvicorn vulnfolio.vulnerability_api:app \
+uvicorn vulnfolio.ingest_server:app \
   --host 127.0.0.1 --port 8443 \
   --ssl-certfile private-data/tls/localhost.crt \
   --ssl-keyfile private-data/tls/localhost.key \
   --no-proxy-headers
 ```
 
-**必ず`--no-proxy-headers`を付けます。** このPoCではASGI接続の`scheme=https`でTLSを検査するため、外部由来の`X-Forwarded-Proto`を信用しないDirect TLSが前提です。
+**必ず`--no-proxy-headers`を付けます。** ASGI接続の`scheme=https`でTLSを検査するため、外部由来の`X-Forwarded-Proto`を信用しないDirect TLSが前提です。
 
-`--host 0.0.0.0`などでLANに公開すると、同一アプリのグローバル脆弱性閲覧API・OpenAPIも接続可能になり、認証なしのローカルUI/APIは接続元による制限のままです。**本番公開には認証・Ingress境界・セキュリティレビューを追加する必要があります。** リバースプロキシでループバック認証を迂回する構成は使用しないでください。
+**受信に`vulnfolio.vulnerability_api:app`を指定しないでください。** こちらは管理アプリであり、`127.0.0.1`からの操作だけを想定しています。
+
+**重要:** 受信専用アプリにはグローバルCVE閲覧APIや管理UIを載せません。テストでは`127.0.0.1:8443`にのみバインドします。LANへのバインドやReverse Proxy公開は**Release Gate #33を完了するまで対象外**です。公開先のDNS、証明書、ファイアウォール、管理アプリとの物理/ネットワーク分離、アクセス監査が別途必要です。
 
 ### 2.4 クライアントからアップロード
 
@@ -120,7 +122,9 @@ python -m vulnfolio.ingest_upload \
 | 401 / 403 | Token不正・別Profile / HTTP・Origin付きブラウザ等 |
 | 413 / 415 / 422 | サイズ超過・Content-Type不正・JSON/Schema不正 |
 | 503 | Credential Store未設定・破損・権限不備（fail closed） |
-| 無認証の資産読み取り | 引き続き不可（loopback限定） |
+| 資産読み取り・CVE閲覧・管理UI | **受信専用アプリではルート自体が存在しない（404）** |
+| Swagger / OpenAPI | **受信専用アプリでは無効（404）** |
+| 旧管理アプリ | 従来どおりloopback専用。HTTPS受信ルートを登録しない |
 
 ## 4. 自動テストで確認すること
 
@@ -130,7 +134,7 @@ python -m unittest discover -s tests -p 'test_ingest_*.py' -v
 
 - TestClient: トークン発行・失効・ローテーション、別Profileへの拒否、HTTP拒否、Origin拒否、破損・不適切なファイル権限でfail-closed、取り込みサイズ/形式、重複抑止
 - MockTransport: 429/503等の再試行とリダイレクト禁止
-- **実TLSプロセス**: テスト用OpenSSL証明書とUvicornを`127.0.0.1`で起動し、実CLIから証明書を検証してアップロード。信頼されない自己署名証明書では失敗することも確認
+- **実TLSプロセス**: `ingest_server:app`をテスト用OpenSSL証明書とUvicornで`127.0.0.1`に起動。実CLIから証明書を検証してアップロード。信頼されない自己署名証明書では失敗することを確認。HTTPで各管理API・Web・OpenAPI・静的ファイルが404になることも検査
 - すべて**合成データとloopback通信**のみ。実際のLinux/Windowsホストは利用しない
 
 ## 5. 未対応・本番前の残留リスク
@@ -141,6 +145,6 @@ python -m unittest discover -s tests -p 'test_ingest_*.py' -v
 - 受信したインベントリ内容は既存M1のSQLiteに保存。保存時暗号化や顧客組織ごとのテナント分離はない。
 - **保存側のスキーマではWindows OS Buildを永続化していない**。KB/ビルド照合による脆弱性確定はできない。
 - リアルホストでの収集とLAN越し送信の受入は、権限を得たテスト環境で別途行う。
-- 既存のローカル管理APIはネットワーク公開できる認証モデルではないため、バックエンド全体をそのままインターネット公開してはならない。
+- **管理アプリと受信アプリのASGIルートは分離済み**。管理アプリにユーザー認証・RBACがない問題は残るため、管理プロセスをLAN/Internetに公開してはならない。受信専用アプリも本番公開・LAN運用のセキュリティレビューは未完了（#33）。
 
 関連：[M1c収集](poc-m1c-agentless.md) / [M1bの手動インポート](poc-m1-import.md) / [実装方針](modularity.md)
