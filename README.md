@@ -4,7 +4,7 @@
 
 CVE/KEV/EPSS等の公式データと、SNS・セキュリティコミュニティ等の非公式シグナルを整理し、次に問題化しそうな脆弱性・現在進行中の脅威・自分が対応すべき事項を、一つのWebダッシュボードにまとめるOSSプロジェクトです。
 
-> **実装状況（2026-11-19）：M0 / M1a / M1b PoC完了。** M1cの実機収集・認証付きHTTPS転送は未実装です。SNS、LLM、MCPも未実装です。進捗の最新情報は[GitHub Issues](https://github.com/zawa356/vulnfolio/issues)を参照してください。
+> **実装状況（2026-11-19）：M0 / M1a / M1b PoC完了。M1cのAnsible/PowerShell収集コードを追加（実機接続は未検証）。** 認証付きHTTPS転送・SNS・LLM・MCPは未実装です。進捗の最新情報は[GitHub Issues](https://github.com/zawa356/vulnfolio/issues)を参照してください。
 
 ## Quick start — M0 / M1 local PoC
 
@@ -51,6 +51,7 @@ My Environmentでは、案件Profile→Asset→Installed Softwareを手動登録
 | [M0 PoC](docs/poc-m0.md) | 最小CVEデータ取得・SQLite・REST・Web UIの実装と制限 |
 | [M1a PoC](docs/poc-m1.md) | ローカル案件・資産登録、影響候補、対応履歴、権限上の制限 |
 | [M1b JSONインポート](docs/poc-m1-import.md) | 収集JSONをProfileへ手動アップロード・冪等取込する手順 |
+| [M1c Agentless収集PoC](docs/poc-m1c-agentless.md) | Linux SSH / Windows WinRMの読み取り収集の実行方法・安全上の制限 |
 | [Phase 0 PoC](docs/poc-phase0.md) | 3種類の収集レポートの共通変換・検証結果・制約 |
 | [OSS比較](docs/oss-comparison.md) | Vulnerability-Lookup vs OpenCTI、選定根拠 |
 | [収集方式・データ契約](docs/data-ingestion.md) | SNS、エージェントレス資産収集、収集方式 |
@@ -72,7 +73,7 @@ OpenCTIは攻撃者、マルウェア、キャンペーン等の関係分析に�
 
 ## Phase 0 オフラインPoC（M0に取り込み済み）
 
-Ansible / Vuls / OpenVASの**保存済み・サンプルレポート**を、同じJSON契約に変換するアダプターとテストはmainに取り込み済みです。**実ホストへのSSH/WinRM収集と認証付きHTTPS自動送信は未実装**です。共通JSONのローカル**手動インポートはM1bで実装済み**です。
+Ansible / Vuls / OpenVASの**保存済み・サンプルレポート**を、同じJSON契約に変換するアダプターとテストはmainに取り込み済みです。**Linux/WindowsへのSSH/WinRM収集コードはM1cで追加しましたが、実機接続は未検証**です。**認証付きHTTPS自動送信は未実装**です。共通JSONのローカル**手動インポートはM1bで実装済み**です。
 
 ```bash
 PYTHONPATH=src python -m vulnfolio.cli --driver ansible --profile demo-profile --input tests/fixtures/ansible.json
@@ -81,7 +82,7 @@ PYTHONPATH=src python -m unittest discover -s tests -v
 
 ## 開発方針
 
-小規模OSSとして無理のない範囲から始め、M0の**CVE取得＋検索＋ダッシュボード**とM1a/M1bの**資産照合＋JSON手動取込**は実装済みです。続けて実機収集、認証付き転送、SNS分析、LLM予測、通知・レポートを縦スライスで拡張します。UIはBootstrap系の既存管理画面キットを優先し、独自UI部品を増やしません。
+小規模OSSとして無理のない範囲から始め、M0の**CVE取得＋検索＋ダッシュボード**とM1a/M1bの**資産照合＋JSON手動取込**は実装済みです。続けて実機収集の検証、認証付き転送、SNS分析、LLM予測、通知・レポートを縦スライスで拡張します。UIはBootstrap系の既存管理画面キットを優先し、独自UI部品を増やしません。
 
 ---
 
@@ -95,6 +96,6 @@ PYTHONPATH=src python -m unittest discover -s tests -v
 - **[Issues](https://github.com/zawa356/vulnfolio/issues)** — 作業単位・受入条件・技術調査・検討事項
 - **[Pull Requests](https://github.com/zawa356/vulnfolio/pulls)** — 実装・レビュー・CI・変更履歴
 
-**[M0 — CVE→DB→Web](https://github.com/zawa356/vulnfolio/milestone/1)は完了**、次は **[M1 — Asset Relevance](https://github.com/zawa356/vulnfolio/milestone/2)** を進めます。各イテレーションで動作する縦スライスを完成させた後、次の優先順位を見直します。Issueを作成し、ブランチ・PRを紐付け、CIと受入条件を満たしてからマージする運用です。
+**[M0 — CVE→DB→Web](https://github.com/zawa356/vulnfolio/milestone/1)は完了**、現在は **[M1 — Asset Relevance](https://github.com/zawa356/vulnfolio/milestone/2)** の実機収集（#27）・認証付き転送（#24）を進めています。各イテレーションで動作する縦スライスを完成させた後、次の優先順位を見直します。Issueを作成し、ブランチ・PRを紐付け、CIと受入条件を満たしてからマージする運用です。
 
 **進捗・優先順位・完了判定はGitHub Issues/Projects/Milestonesを正本**とします。`docs/roadmap.md`は当初の実装方針・長期候補の参考資料であり、進行状況の二重管理はしません。
