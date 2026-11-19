@@ -3,7 +3,7 @@
 - 対応: [Issue #27](https://github.com/zawa356/vulnfolio/issues/27)（親: [Issue #24](https://github.com/zawa356/vulnfolio/issues/24)）
 - 状態: **収集コードとオフライン試験**。**実際のLinux/Windowsへの接続試験は未実施**。接続可能な権限ある検証ホストでのみ実施する。
 - 結果: OS・ソフト/パッケージ・Windows KB等の**読み取り専用収集** → [CollectionEnvelope v0.1.0](contracts/collection-envelope-v0.1.md) → [M1b手動インポート](poc-m1-import.md)。
-- **HTTPS自動送信・本番認証は別Issue**。収集機能の正常動作にvulnfolioサーバーへの通信を必要としない。
+- **認証付きHTTPS送信は[別PoC](poc-m1c-https.md)で実装**。収集機能と送信機能は独立し、対象ホストへの実接続・LAN/本番環境は未検証。
 
 ## 全体構成
 
@@ -90,7 +90,7 @@ CLIはインベントリから対象グループのホスト名だけを抽出�
 - サーバー側M1bは`findings`が非空の場合に取り込まず422を返す。今回のAnsible収集では`findings=[]`。
 - コレクターが正常終了したとしても、対象ホストのソフトウェアを全件取得したという保証はない。対象OS・パッケージマネージャ・実行権限によって範囲が変わる。
 - **読み取り専用は対象情報の取得処理**の意味。Ansible接続処理やモジュール一時実行の副作用ゼロまでは保証しない。
-- 結果の送信・スケジューリング・認証はM1c後半で扱う。無認証のPoCサーバーをLAN/インターネットへ公開しない。
+- **別モジュールの`ingest_upload.py`によるHTTPS送信PoCは実装済み**。スケジューリング・本番Ingress・本番認証基盤は未対応（[HTTPS手順](poc-m1c-https.md)）。ローカル管理APIはLAN/インターネットに無認証公開しない。
 
 ## 6. CI・受入検証
 
