@@ -114,7 +114,7 @@ python scripts/m1_browser_smoke.py
 
 ## 今後の改善候補
 
-- Ansible等で生成した`AssetObservation`をProfile/Asset/Productへ安全にインポートするアダプター。ホスト識別の安定化、再投入時の冪等性を検討する
+- **M1bで完了:** Ansible等の`AssetObservation`をProfile/Asset/Productに手動インポートする機能と、同一JSON再投入の冪等化（[詳細](poc-m1-import.md)）。**残件:** ホスト名変更時の安定IDと複数ソースの競合解決
 - RPM/DEBのepoch/release/arch、WindowsのKB/ビルド、OSベンダーアドバイザリを照合に利用し、初期の誤検出率を減らす
 - CVEが増加した際の製品・CVEのインデックス化／マッチングバッチ化（現段階の逐次走査はPoC用）
 - Profile横断ビュー・資産廃止/統合・顧客分離・認証・監査・削除・データエクスポート
