@@ -16,3 +16,12 @@ data/
 # Canonical inventory exported from a bastion is private by default.
 collected-normalized.json
 collected-*.json
+
+# Bastion-side private inventory, SSH/WinRM config and controller cache
+collector/ansible/inventory.ini
+collector/ansible/inventory.yml
+collector/ansible/inventory.yaml
+collector/ansible/group_vars/
+collector/ansible/host_vars/
+collector/ansible/results/
+*.retry
