@@ -51,7 +51,7 @@ uvicorn vulnfolio.vulnerability_api:app --host 127.0.0.1 --port 8000
 2. Profile内にAsset `test-linux` とOS情報を登録
 3. そのAssetへインストール製品名・vendor・versionを追加
 4. 「Potential vulnerability matches」に、**ローカルDBへ収集済みのCVE Record** と一致する製品があれば、影響候補として表示
-5. New / Investigating / In progress / Mitigated / Not affected / Accepted risk から手動ステータスを保存
+5. New / Investigating / Affected（手動確認）/ In progress / Mitigated / Not affected / Accepted risk から手動ステータスを保存
 6. Mitigated / Not affected / Accepted risk はデフォルト一覧から除外（「Show handled / excluded」で再表示）
 
 `CVE-2024-3094`は公開APIの動作確認に用いる既知の例。実際に候補としてヒットするかは上流の`affected`の記載内容、製品名、vendor、versionが一致するかに依存する。**任意のCVEを指定しても必ず候補が出るわけではない。**
