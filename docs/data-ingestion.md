@@ -122,6 +122,19 @@ flowchart LR
 - 自動送信ではHTTPS、認証、再送、タイムアウト、通信不能時のローカル保持を検討。
 - 「収集できなかった項目」と「存在しないことを確認できた項目」を区別する。
 
+### 方式の整理：OpenVASではなく認証付き資産インベントリを初期採用
+
+ユーザーの想定は、**踏み台からSSH/WinRMでOSにログインし、`rpm -qa` / `dpkg-query` / Windows KB等を収集し、中央で脆弱性情報に照合する**方式。**ポートスキャン・サービス応答からの脆弱性推定を主目的としない**。
+
+- **Ansible/PowerShell:** インベントリ収集の主な実装候補。Linuxは`ansible.builtin.package_facts`などを使い、epoch/release/arch等を落とさず構造化して保存する。
+- **Vuls:** Linux系ではSSHでパッケージを調べ、OVAL・OSベンダーのセキュリティアドバイザリと照合する既存OSS。特に**中央照合エンジンの自作を減らす候補**として比較する。ただし利用形態・対象OS・連携方法はPoCで確認する。
+- **OpenVAS/Greenbone:** ネットワークスキャンだけでなく、**Authenticated Scan / Local Security Checks / Notus**によりSSH/SMB等でインストール済みパッケージやパッチ状態を収集・照合できる。よって「できない」のではなく、今回必要な処理に対して**全体の検査基盤が大きくなりがち**という理由で初期の第一候補から外す。
+- **Vulnerability-Lookup:** 脆弱性情報の集約には有効でも、OS固有のバックポート修正やKB累積関係まで正確に判定できるとは限らない。CVE/CPEの単純文字列一致で「影響あり」を確定しない。
+
+したがって、**初期は軽量インベントリ収集＋中央で影響候補を照合**、その判定精度が不足するときはVuls等の既存マッチング機能の再利用を検証する。OpenVAS相当のアクティブスキャンは今回の必須機能ではない。
+
+参考: [Greenbone Notus / Local Security Checks](https://greenbone.github.io/docs/latest/background)、[Greenbone Authenticated Scan](https://docs.greenbone.net/GSM-Manual/gos-24.10/en/scanning.html)、[Vuls](https://vuls.io/)、[Ansible package_facts](https://docs.ansible.com/projects/ansible/latest/collections/ansible/builtin/package_facts_module.html)。
+
 ## 4. 将来の拡張ポイント
 
 - ネットワーク機器向け（FortiOS/Cisco/Aruba等）CLI/API/SNMPアダプター
