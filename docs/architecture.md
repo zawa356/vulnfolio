@@ -165,3 +165,14 @@ VulnMCPとの機能重複はまず調査し、安易に同名ツールを再実�
 **採用条件:** 全データ複製やコアへのパッチなしで主要ユースケースが成立し、OSS/外部API使用制限・費用・保守性が許容できること。満たせない場合はOpenCTIや別方式を再評価する。
 
 関連: [要件](requirements.md) / [モジュール化設計](modularity.md) / [OSS比較](oss-comparison.md) / [収集方式](data-ingestion.md) / [ロードマップ](roadmap.md)
+
+
+## M1c PoCの受信経路分離（2026-11-19）
+
+管理・閲覧アプリとHTTPS JSON受信アプリは**別ASGIエントリーポイント**です（[詳細](poc-m1c-https.md)）。
+
+- **Local management:** `vulnfolio.vulnerability_api:app` — グローバルCVE・Tabler・ローカル案件/資産・手動JSON取り込み。**ループバック起動のみ**。
+- **Collector ingest-only:** `vulnfolio.ingest_server:app` — **Bearer認証付き`POST /api/v1/ingest/profiles/{id}/imports`だけ**。CVE/資産の参照・編集、Web、Swagger/OpenAPI、静的配信は全て404。Direct TLS + `--no-proxy-headers`、当面はループバックPoC。
+- 両アプリはPoC上同じSQLite/Importerを利用する。共有DBの運用権限、監査、レート制限、Ingress分離、本番RBACの設計は[Release Gate #33](https://github.com/zawa356/vulnfolio/issues/33)に残す。
+
+この分離により**誤って受信ポートを接続公開しても管理エンドポイントを一緒に公開しない**構造となる。ただし受信アプリの運用環境・公開自体の安全性を保証するものではない。
