@@ -87,7 +87,6 @@ def main():
                 assert page.locator("#candidate-rows input").input_value() == "Test mitigation complete"
 
                 page.reload(wait_until="domcontentloaded")
-                page.locator("#candidate-rows").get_by_text(CVE).wait_for(timeout=10000) if False else None
                 page.locator("#profile-select option", has_text="Test Project").wait_for(timeout=10000)
                 page.locator("#include-closed").check()
                 page.locator("#candidate-rows").get_by_text(CVE).wait_for(timeout=10000)
