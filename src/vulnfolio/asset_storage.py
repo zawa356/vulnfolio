@@ -15,7 +15,7 @@ from vulnfolio.vulnerabilities import validate_cve_id
 
 CLOSED_STATUSES = frozenset({"mitigated", "not_affected", "accepted_risk"})
 ALLOWED_STATUSES = frozenset({
-    "new", "investigating", "in_progress", "mitigated", "not_affected", "accepted_risk"
+    "new", "investigating", "affected", "in_progress", "mitigated", "not_affected", "accepted_risk"
 })
 
 
@@ -74,7 +74,7 @@ class AssetRepository(VulnerabilityRepository):
                     asset_id TEXT NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
                     cve_id TEXT NOT NULL REFERENCES vulnerabilities(id),
                     status TEXT NOT NULL CHECK(status IN (
-                      'new','investigating','in_progress','mitigated','not_affected','accepted_risk'
+                      'new','investigating','affected','in_progress','mitigated','not_affected','accepted_risk'
                     )),
                     note TEXT NOT NULL DEFAULT '',
                     updated_at TEXT NOT NULL,
