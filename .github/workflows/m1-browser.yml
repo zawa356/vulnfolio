@@ -1,0 +1,30 @@
+name: M1 Chromium inventory acceptance
+
+on:
+  pull_request:
+    paths:
+      - 'src/vulnfolio/asset_*.py'
+      - 'src/vulnfolio/web/environment.*'
+      - 'scripts/m1_browser_smoke.py'
+      - '.github/workflows/m1-browser.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install vulnfolio and Playwright
+        run: |
+          python -m pip install -e .
+          python -m pip install 'playwright>=1.56,<2'
+          python -m playwright install --with-deps chromium
+      - name: Browser acceptance with synthetic local data
+        run: python scripts/m1_browser_smoke.py
