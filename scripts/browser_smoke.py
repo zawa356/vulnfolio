@@ -75,7 +75,7 @@ def main() -> None:
                 page.locator("#q").press("Enter")
                 page.locator("#vulnerability-rows a", has_text=CVE).click()
                 detail = page.locator("#detail")
-                assert detail.is_visible()
+                assert "d-none" not in detail.get_attribute("class").split()
                 page.wait_for_function(
                     "() => document.getElementById('detail-description').textContent.includes('Synthetic record for tests only.')",
                     timeout=10000,
@@ -88,7 +88,7 @@ def main() -> None:
                 assert refs.count() == 1
                 assert refs.first.get_attribute("href") == "https://example.invalid/security/CVE-2099-12345"
                 page.locator("#close-detail").click()
-                assert not detail.is_visible()
+                assert "d-none" in detail.get_attribute("class").split()
                 assert not errors, f"Unexpected JS runtime errors: {errors}"
                 browser.close()
             print("BROWSER M0 PASS: real Chromium search -> detail -> escaped description -> references")
