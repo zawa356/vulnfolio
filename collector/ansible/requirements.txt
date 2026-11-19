@@ -1,0 +1,4 @@
+# Collector controller ONLY, not the vulnfolio API's runtime dependencies.
+# Python 3.11+ recommended. Windows hosts additionally need ansible.windows.
+ansible-core>=2.18,<2.23
+pywinrm>=0.5,<1

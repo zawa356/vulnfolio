@@ -111,4 +111,4 @@ node --check src/vulnfolio/web/environment.js
 - Chromium受入では、ブラウザからJSONアップロード→Asset/Product登録→CVE影響候補までの表示を確認。
 - テストではCIRCL APIへ通信しない。
 
-関連：[M1aのProfile/Asset/候補管理](poc-m1.md) / [モジュール化](modularity.md) / [収集設計](data-ingestion.md)
+関連：[M1aのProfile/Asset/候補管理](poc-m1.md) / [M1c Linux/Windows収集PoC](poc-m1c-agentless.md) / [モジュール化](modularity.md) / [収集設計](data-ingestion.md)

@@ -1,0 +1,72 @@
+---
+# M1c: read-only *inventory* on targets; only the controller writes result JSON.
+# This playbook does NOT call package/update/install/patch/firewall modules.
+# Target hosts are ONLY those in the explicit vulnfolio_linux/windows groups.
+
+- name: Collect Linux OS and installed package inventory
+  hosts: vulnfolio_linux
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Read basic OS facts
+      ansible.builtin.setup:
+        gather_subset:
+          - "!all"
+          - "min"
+      register: vf_linux_os
+      changed_when: false
+      no_log: true
+
+    - name: Read installed packages (RPM / DEB / supported package manager)
+      ansible.builtin.package_facts:
+        manager: auto
+      register: vf_linux_packages
+      changed_when: false
+      no_log: true
+
+    - name: Write a sanitized host artifact on the CONTROLLER only
+      ansible.builtin.copy:
+        dest: "{{ vf_collection_dir }}/{{ inventory_hostname | hash('sha256') }}.json"
+        mode: "0600"
+        content: >-
+          {{
+            {
+              "asset_id": inventory_hostname,
+              "ansible_facts": {
+                "ansible_os_family": vf_linux_os.ansible_facts.ansible_os_family | default(vf_linux_os.ansible_facts.os_family | default("")),
+                "ansible_distribution": vf_linux_os.ansible_facts.ansible_distribution | default(vf_linux_os.ansible_facts.distribution | default("")),
+                "ansible_distribution_version": vf_linux_os.ansible_facts.ansible_distribution_version | default(vf_linux_os.ansible_facts.distribution_version | default("")),
+                "packages": vf_linux_packages.ansible_facts.packages | default({})
+              }
+            } | to_nice_json
+          }}
+      delegate_to: localhost
+      vars:
+        ansible_connection: local
+      become: false
+      no_log: true
+
+- name: Collect Windows OS, installed software and hotfix inventory
+  hosts: vulnfolio_windows
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Read installed registry applications and Get-HotFix on Windows
+      ansible.windows.win_powershell:
+        path: "{{ playbook_dir }}/windows.ps1"
+        depth: 10
+        error_action: stop
+      register: vf_windows
+      changed_when: false
+      no_log: true
+
+    - name: Write sanitized Windows artifact on the CONTROLLER only
+      ansible.builtin.copy:
+        dest: "{{ vf_collection_dir }}/{{ inventory_hostname | hash('sha256') }}.json"
+        mode: "0600"
+        content: "{{ {'asset_id': inventory_hostname, 'ansible_facts': vf_windows.result.ansible_facts} | to_nice_json }}"
+      delegate_to: localhost
+      vars:
+        ansible_connection: local
+      become: false
+      no_log: true

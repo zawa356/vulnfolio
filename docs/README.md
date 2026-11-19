@@ -16,7 +16,7 @@
 | 全体構成・モジュール境界 | [アーキテクチャ](architecture.md)、[モジュール化](modularity.md) | 境界・API方針変更時 |
 | SNS/資産収集パイプライン | [収集方式](data-ingestion.md) | Adapterや収集経路変更時 |
 | **現在受理するJSONの厳密な仕様** | [CollectionEnvelope v0.1.0](contracts/collection-envelope-v0.1.md) | AdapterまたはImporter変更時 |
-| 起動、ユーザー操作、既知の制限 | [M0](poc-m0.md)、[M1a](poc-m1.md)、[M1b](poc-m1-import.md) | 関連PRのマージ時 |
+| 起動、ユーザー操作、既知の制限 | [M0](poc-m0.md)、[M1a](poc-m1.md)、[M1b](poc-m1-import.md)、[M1c収集PoC](poc-m1c-agentless.md) | 関連PRのマージ時 |
 | 先行技術と設計判断 | [OSS比較](oss-comparison.md)、[UI規約](ui-guidelines.md) | 技術判断を変えるとき |
 | 当初の実装順・調査メモ | [旧ロードマップ案](roadmap.md)、[Phase 0 PoC](poc-phase0.md) | **履歴資料**、現行の進捗判定に使わない |
 
@@ -28,7 +28,9 @@
 
 **M1b（完了）:** 収集済みのAnsible/Vuls/OpenVAS風レポートを共通JSONへ**オフライン変換**、共通JSONの`observations`をローカルWeb/RESTから案件資産へ**手動インポート**。同一JSON再投入、空観測、手動製品の保護をテスト済み。**Vuls/OpenVASの非空`findings`は取り込み拒否**。
 
-**今後:** Linux/Windowsへの実SSH/WinRMでの収集コマンド、認証付きHTTPS自動転送、CVEとの厳密な影響判断（OSベンダーバックポート/Windows KB）、SNS観測、LLM予測、通知、MCP、認証付き公開。
+**M1c（コード実装・実機未検証）:** Linux/WindowsのAnsible/PowerShell読み取り収集→既存共通JSONのローカル出力（[詳細](poc-m1c-agentless.md)）。
+
+**今後:** Linux/Windowsの権限ある実機での受入、認証付きHTTPS自動転送、CVEとの厳密な影響判断（OSベンダーバックポート/Windows KB）、SNS観測、LLM予測、通知、MCP、認証付き公開。
 
 > **重要:** 現行アプリは認証なしのローカルPoCです。ループバック接続制限は認証の代替になりません。実顧客情報を投入せず、LAN/インターネットへ公開しないでください。
 

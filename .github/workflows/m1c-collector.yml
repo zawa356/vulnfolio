@@ -1,0 +1,52 @@
+name: M1c Ansible collector syntax and offline export
+
+on:
+  pull_request:
+    paths:
+      - 'collector/**'
+      - 'src/vulnfolio/collector_export.py'
+      - 'tests/test_collector_export.py'
+      - '.github/workflows/m1c-collector.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install controller tools
+        run: |
+          python -m pip install -r collector/ansible/requirements.txt
+          ansible-galaxy collection install 'ansible.windows:>=3.1.0'
+      - name: Validate playbook without contacting targets
+        run: |
+          ansible-playbook -i collector/ansible/inventory.example.ini collector/ansible/collect.yml --syntax-check
+      - name: Run collector export unit tests (offline)
+        run: |
+          python -m pip install -e .
+          python -m unittest discover -s tests -p 'test_collector_export.py' -v
+
+  powershell-parse:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse the Windows collector without executing it
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          $path = (Resolve-Path 'collector/ansible/windows.ps1').Path
+          [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -gt 0) {
+            $parseErrors | ForEach-Object { Write-Error $_.ToString() }
+            throw 'Windows collector PowerShell syntax invalid'
+          }
+          Write-Host 'PowerShell collector syntax: PASS (no remote Windows commands executed)'
