@@ -22,12 +22,15 @@ CVE/KEV/EPSS等の公式データと、SNS・セキュリティコミュニテ�
 | --- | --- |
 | [要件定義（決定事項・将来要件）](docs/requirements.md) | 機能・非機能・データの扱い |
 | [アーキテクチャ案](docs/architecture.md) | 独自中間レイヤー、DB、API、収集・AI分析 |
+| [モジュール化設計](docs/modularity.md) | プラグイン境界・共通API・機能差異の吸収方針 |
 | [OSS比較](docs/oss-comparison.md) | Vulnerability-Lookup vs OpenCTI、選定根拠 |
 | [収集方式・データ契約](docs/data-ingestion.md) | SNS、エージェントレス資産収集、JSON仕様案 |
 | [UI設計原則](docs/ui-guidelines.md) | 標準キット優先、情報設計、配色 |
 | [実装ロードマップ・検証事項](docs/roadmap.md) | MVP、PoC、保留事項 |
 
 ## 現時点の技術方針
+
+収集・照合・AI・公開系は**交換可能なモジュール境界**を設けます（初期はモジュラーモノリス、不要なマイクロサービス化はしません）。
 
 Vulnerability-Lookupを**第一候補の既存バックエンド**とし、vulnfolio固有のSNS観測・LLM分析・予測・資産管理・対応履歴を**独自中間APIと拡張DB**に保持する方式を優先検証します。外部公開APIから始め、必要に応じてセルフホストに切り替えられる構造を目標とします。
 
