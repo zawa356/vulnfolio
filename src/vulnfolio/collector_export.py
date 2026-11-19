@@ -19,6 +19,7 @@ from typing import Any
 
 from vulnfolio.adapters.ansible import AnsibleAdapter
 from vulnfolio.contracts import InputError, envelope
+from vulnfolio.inventory_import import validate_envelope, ImportValidationError
 from vulnfolio.vulnerability_storage import utcnow
 
 PLAYBOOK = Path(__file__).resolve().parents[2] / "collector" / "ansible" / "collect.yml"
@@ -116,7 +117,7 @@ def normalize_artifacts(
             observations.extend(normalized["observations"])
         except (OSError, UnicodeError, ValueError, InputError, TypeError):
             errors.append({"asset_id": hostname, "reason": "invalid_collection_artifact"})
-    if failed_controller:
+    if failed_controller and len(errors) < 200:
         errors.append({"asset_id": "_collector", "reason": "ansible_playbook_failed"})
     return envelope(
         driver="ansible", profile_id=profile_id, capabilities=converter.capabilities,
@@ -149,6 +150,10 @@ def read_inventory_hosts(path: Path) -> list[str]:
 
 
 def save_report(output: Path, report: dict[str, Any]) -> None:
+    try:
+        validate_envelope(report, report["profile_id"])
+    except (ImportValidationError, KeyError, TypeError) as exc:
+        raise CollectorError("Generated envelope is not accepted by the current M1b importer") from exc
     data = (json.dumps(report, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
     if len(data) > MAX_ENVELOPE_SIZE:
         raise CollectorError(
