@@ -23,6 +23,7 @@ CVE/KEV/EPSS等の公式データと、SNS・セキュリティコミュニテ�
 | [要件定義（決定事項・将来要件）](docs/requirements.md) | 機能・非機能・データの扱い |
 | [アーキテクチャ案](docs/architecture.md) | 独自中間レイヤー、DB、API、収集・AI分析 |
 | [モジュール化設計](docs/modularity.md) | プラグイン境界・共通API・機能差異の吸収方針 |
+| [Phase 0 PoC](docs/poc-phase0.md) | 3種類の収集レポートの共通変換・検証結果・制約 |
 | [OSS比較](docs/oss-comparison.md) | Vulnerability-Lookup vs OpenCTI、選定根拠 |
 | [収集方式・データ契約](docs/data-ingestion.md) | SNS、エージェントレス資産収集、JSON仕様案 |
 | [UI設計原則](docs/ui-guidelines.md) | 標準キット優先、情報設計、配色 |
@@ -39,6 +40,15 @@ OpenCTIは攻撃者、マルウェア、キャンペーン等の関係分析に�
 ## セキュリティ上の境界
 
 公開脆弱性情報と、案件固有の資産・構成・対処履歴は分離します。後者は公開Web/API/MCPから既定で参照させません。SNS上の未確認情報は確認済みの脅威と区別し、出典・観測時刻・評価根拠を保持します。
+
+## Phase 0 オフラインPoC（作業ブランチ）
+
+Ansible / Vuls / OpenVASの**保存済み・サンプルレポート**を、同じJSON契約に変換する最小コードとテストを追加しています。**実ホストのスキャンやWebダッシュボードはまだ実装していません**。
+
+```bash
+PYTHONPATH=src python -m vulnfolio.cli --driver ansible --profile demo-profile --input tests/fixtures/ansible.json
+PYTHONPATH=src python -m unittest discover -s tests -v
+```
 
 ## 開発方針
 
