@@ -16,7 +16,7 @@
 | 全体構成・モジュール境界 | [アーキテクチャ](architecture.md)、[モジュール化](modularity.md) | 境界・API方針変更時 |
 | SNS/資産収集パイプライン | [収集方式](data-ingestion.md) | Adapterや収集経路変更時 |
 | **現在受理するJSONの厳密な仕様** | [CollectionEnvelope v0.1.0](contracts/collection-envelope-v0.1.md) | AdapterまたはImporter変更時 |
-| 起動、ユーザー操作、既知の制限 | [M0](poc-m0.md)、[M1a](poc-m1.md)、[M1b](poc-m1-import.md)、[M1c収集PoC](poc-m1c-agentless.md) | 関連PRのマージ時 |
+| 起動、ユーザー操作、既知の制限 | [M0](poc-m0.md)、[M1a](poc-m1.md)、[M1b](poc-m1-import.md)、[M1c収集PoC](poc-m1c-agentless.md)、[M1c認証付きHTTPS](poc-m1c-https.md) | 関連PRのマージ時 |
 | 先行技術と設計判断 | [OSS比較](oss-comparison.md)、[UI規約](ui-guidelines.md) | 技術判断を変えるとき |
 | 当初の実装順・調査メモ | [旧ロードマップ案](roadmap.md)、[Phase 0 PoC](poc-phase0.md) | **履歴資料**、現行の進捗判定に使わない |
 
@@ -30,9 +30,11 @@
 
 **M1c（コード実装・実機未検証）:** Linux/WindowsのAnsible/PowerShell読み取り収集→既存共通JSONのローカル出力（[詳細](poc-m1c-agentless.md)）。
 
-**今後:** Linux/Windowsの権限ある実機での受入、認証付きHTTPS自動転送、CVEとの厳密な影響判断（OSベンダーバックポート/Windows KB）、SNS観測、LLM予測、通知、MCP、認証付き公開。
+**M1c HTTPS送信PoC:** Profile単位トークン認証、証明書検証、再送、既存Importerへの接続（[実装・試験と制約](poc-m1c-https.md)）。**ローカル実TLSのみ検証、LAN/本番未対応。**
 
-> **重要:** 現行アプリは認証なしのローカルPoCです。ループバック接続制限は認証の代替になりません。実顧客情報を投入せず、LAN/インターネットへ公開しないでください。
+**今後:** Linux/Windowsの権限ある実機での受入とLAN転送の検証、CVEとの厳密な影響判断（OSベンダーバックポート/Windows KB）、SNS観測、LLM予測、通知、MCP、認証付き公開。
+
+> **重要:** UI/資産管理APIは認証なしのローカルPoCです。HTTPSアップロードのみ別経路でトークン認証を実装しています。**全体として本番向け認証・公開設計は未完了**です。ループバック制限は認証の代替になりません。実顧客情報を投入せず、LAN/インターネットへ無審査で公開しないでください。
 
 ## 3. 文書運用ルール
 
