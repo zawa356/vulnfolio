@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>My Environment | vulnfolio</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.7.5/dist/css/tabler.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/@tabler/core@1.7.5/dist/js/tabler.min.js"></script>
+  <script defer src="/static/environment.js"></script>
+</head>
+<body>
+<div class="page">
+  <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+    <div class="container-fluid">
+      <h1 class="navbar-brand navbar-brand-autodark"><a href="/" class="text-decoration-none">vulnfolio</a></h1>
+      <div class="collapse navbar-collapse show">
+        <ul class="navbar-nav pt-lg-3">
+          <li class="nav-item"><a href="/" class="nav-link">Global vulnerabilities</a></li>
+          <li class="nav-item active"><a href="/environment" class="nav-link" aria-current="page">My environment</a></li>
+          <li class="nav-item"><span class="nav-link disabled" aria-disabled="true">Threat signals (planned)</span></li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+  <div class="page-wrapper">
+    <header class="navbar navbar-expand-md d-print-none">
+      <div class="container-xl">
+        <div class="navbar-nav flex-row order-md-last">
+          <a href="/docs" class="nav-link" target="_blank" rel="noopener noreferrer">REST API docs</a>
+          <a href="https://github.com/zawa356/vulnfolio" class="nav-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </div>
+        <span class="navbar-text">Local-only asset inventory · M1 PoC</span>
+      </div>
+    </header>
+    <main class="page-body">
+      <div class="container-xl">
+        <div class="page-header d-print-none">
+          <h2 class="page-title">My Environment</h2>
+          <div class="text-secondary mt-1">Private profiles, asset inventory and potential vulnerability matches</div>
+        </div>
+        <div id="environment-alert" role="alert" class="alert alert-danger d-none"></div>
+        <div id="environment-notice" role="status" class="alert alert-info d-none"></div>
+        <div class="row row-cards">
+          <div class="col-lg-6">
+            <section class="card h-100">
+              <div class="card-header"><h3 class="card-title">Profiles</h3></div>
+              <div class="card-body">
+                <label for="profile-select" class="form-label">Active project / profile</label>
+                <select id="profile-select" class="form-select mb-3"><option value="">No profiles yet</option></select>
+                <form id="profile-form">
+                  <div class="row g-2">
+                    <div class="col-md-8">
+                      <label for="profile-name" class="form-label">New profile name</label>
+                      <input id="profile-name" name="name" class="form-control" maxlength="120" required>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                      <button class="btn btn-primary w-100" type="submit">Add profile</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </section>
+          </div>
+          <div class="col-lg-6">
+            <section class="card h-100">
+              <div class="card-header"><h3 class="card-title">Assets</h3></div>
+              <div class="card-body">
+                <label for="asset-select" class="form-label">Selected asset</label>
+                <select id="asset-select" class="form-select mb-3"><option value="">No assets yet</option></select>
+                <form id="asset-form">
+                  <div class="row g-2">
+                    <div class="col-md-5">
+                      <label for="asset-name" class="form-label">Asset name</label>
+                      <input id="asset-name" class="form-control" maxlength="180" required placeholder="server-01">
+                    </div>
+                    <div class="col-md-3">
+                      <label for="asset-os" class="form-label">OS family</label>
+                      <input id="asset-os" class="form-control" maxlength="80" placeholder="Linux">
+                    </div>
+                    <div class="col-md-4">
+                      <label for="asset-version" class="form-label">OS version</label>
+                      <input id="asset-version" class="form-control" maxlength="120" placeholder="RHEL 9">
+                    </div>
+                    <div class="col-12">
+                      <button class="btn btn-outline-primary" type="submit">Add asset to profile</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </section>
+          </div>
+          <div class="col-12">
+            <section class="card">
+              <div class="card-header"><h3 class="card-title">Installed software</h3></div>
+              <div class="card-body">
+                <form id="product-form">
+                  <div class="row g-2 mb-3">
+                    <div class="col-md-3">
+                      <label class="form-label" for="product-vendor">Vendor (optional)</label>
+                      <input id="product-vendor" class="form-control" maxlength="180" placeholder="Red Hat">
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label" for="product-name">Product / package</label>
+                      <input id="product-name" class="form-control" maxlength="180" placeholder="xz" required>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label" for="product-version">Installed version</label>
+                      <input id="product-version" class="form-control" maxlength="120" placeholder="5.6.0">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                      <button class="btn btn-outline-primary w-100" type="submit">Add</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                  <thead><tr><th>Vendor</th><th>Product</th><th>Version</th><th>Action</th></tr></thead>
+                  <tbody id="product-rows"><tr><td colspan="4" class="text-secondary">Select an asset.</td></tr></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+          <div class="col-12">
+            <section class="card">
+              <div class="card-header">
+                <h3 class="card-title">Potential vulnerability matches</h3>
+                <div class="card-actions d-flex gap-3 align-items-center">
+                  <label class="form-check mb-0">
+                    <input type="checkbox" class="form-check-input" id="include-closed">
+                    <span class="form-check-label">Show handled / excluded</span>
+                  </label>
+                  <button id="refresh-candidates" type="button" class="btn btn-sm btn-outline-secondary">Refresh</button>
+                </div>
+              </div>
+              <div class="card-body">
+                <p class="text-secondary small mb-1">Matching is based on structured product names from locally stored CVE records. Version ranges, vendor backports and installed patch status are not verified.</p>
+                <p class="text-secondary small mb-0" id="coverage">No comparison performed.</p>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                  <thead><tr><th>Asset / software</th><th>CVE</th><th>Match basis</th><th>Assessment / notes</th></tr></thead>
+                  <tbody id="candidate-rows"><tr><td colspan="4" class="text-secondary">Select a profile.</td></tr></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer class="footer footer-transparent d-print-none">
+      <div class="container-xl text-secondary small">M1 PoC · Candidates are not confirmed vulnerabilities. Do not publish private inventory APIs.</div>
+    </footer>
+  </div>
+</div>
+</body>
+</html>
