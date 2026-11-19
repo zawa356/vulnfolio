@@ -1,12 +1,12 @@
 # vulnfolio
 
-**脆弱性インテリジェンス収集・分析・管理基盤（構想・要件定義中）**
+**モジュラー型脆弱性インテリジェンス・資産管理基盤（開発中）**
 
 CVE/KEV/EPSS等の公式データと、SNS・セキュリティコミュニティ等の非公式シグナルを整理し、次に問題化しそうな脆弱性・現在進行中の脅威・自分が対応すべき事項を、一つのWebダッシュボードにまとめるOSSプロジェクトです。
 
-> **状態（2026-11-19）：要件調査・アーキテクチャ検討段階。** 現時点の採用技術は決定ではなく、PoCで検証してから固定します。
+> **状態（2026-11-19）：M0完了、M1のローカル資産管理PoCを開発中。** SNS、LLM、実機収集は未実装です。
 
-## Quick start — M0 PoC
+## Quick start — M0 / M1 local PoC
 
 Python 3.11+。Vulnerability-Lookupの公開APIから**少数の指定CVEだけ**取得し、SQLite→REST API→Tabler画面で確認できます。
 
@@ -18,7 +18,13 @@ python -m vulnfolio.vulnerability_sync --id CVE-2024-3094
 uvicorn vulnfolio.vulnerability_api:app --host 127.0.0.1 --port 8000
 ```
 
-Web: http://127.0.0.1:8000 / API docs: http://127.0.0.1:8000/docs
+- グローバルCVE: http://127.0.0.1:8000/
+- **My Environment:** http://127.0.0.1:8000/environment
+- REST API docs: http://127.0.0.1:8000/docs
+
+My Environmentでは、案件Profile→Asset→Installed Softwareを手動登録し、ローカルに保存したCVEの構造化`affected`情報に基づく**影響候補**を表示できます。案件別の対応状況も記録します。候補は影響確定ではなく、OSベンダーのバックポート/KB判定はまだできません。
+
+**認証機能はありません。ループバックのみで起動し、顧客の機密資産データを投入しないでください。** [M1の詳細・制約](docs/poc-m1.md)。
 
 取得元が利用できない場合でも、既存のローカル保存データは表示できます。PoCには認証を実装していないため**インターネット公開しない**でください。UIはTablerのバージョン固定CDNを使用しています。
 
@@ -42,6 +48,7 @@ Web: http://127.0.0.1:8000 / API docs: http://127.0.0.1:8000/docs
 | [アーキテクチャ案](docs/architecture.md) | 独自中間レイヤー、DB、API、収集・AI分析 |
 | [モジュール化設計](docs/modularity.md) | プラグイン境界・共通API・機能差異の吸収方針 |
 | [M0 PoC](docs/poc-m0.md) | 最小CVEデータ取得・SQLite・REST・Web UIの実装と制限 |
+| [M1a PoC](docs/poc-m1.md) | ローカル案件・資産登録、影響候補、対応履歴、権限上の制限 |
 | [Phase 0 PoC](docs/poc-phase0.md) | 3種類の収集レポートの共通変換・検証結果・制約 |
 | [OSS比較](docs/oss-comparison.md) | Vulnerability-Lookup vs OpenCTI、選定根拠 |
 | [収集方式・データ契約](docs/data-ingestion.md) | SNS、エージェントレス資産収集、JSON仕様案 |
@@ -54,15 +61,15 @@ Web: http://127.0.0.1:8000 / API docs: http://127.0.0.1:8000/docs
 
 Vulnerability-Lookupを**第一候補の既存バックエンド**とし、vulnfolio固有のSNS観測・LLM分析・予測・資産管理・対応履歴を**独自中間APIと拡張DB**に保持する方式を優先検証します。外部公開APIから始め、必要に応じてセルフホストに切り替えられる構造を目標とします。
 
-OpenCTIは攻撃者、マルウェア、キャンペーン等の関係分析に強く、現段階では比較対象・将来の連携候補です。実装着手より、機能・データ・運用条件の検証を先行させます。
+OpenCTIは攻撃者、マルウェア、キャンペーン等の関係分析に強く、現段階では比較対象・将来の連携候補です。各モジュールは小さく実装・検証し、選択したOSSと接続します。
 
 ## セキュリティ上の境界
 
 公開脆弱性情報と、案件固有の資産・構成・対処履歴は分離します。後者は公開Web/API/MCPから既定で参照させません。SNS上の未確認情報は確認済みの脅威と区別し、出典・観測時刻・評価根拠を保持します。
 
-## Phase 0 オフラインPoC（作業ブランチ）
+## Phase 0 オフラインPoC（M0に取り込み済み）
 
-Ansible / Vuls / OpenVASの**保存済み・サンプルレポート**を、同じJSON契約に変換する最小コードとテストを追加しています。**実ホストのスキャンやWebダッシュボードはまだ実装していません**。
+Ansible / Vuls / OpenVASの**保存済み・サンプルレポート**を、同じJSON契約に変換するアダプターとテストはmainに取り込み済みです。**実ホストのSSH/WinRM収集や資産台帳へのJSON自動取込はまだ実装していません**。
 
 ```bash
 PYTHONPATH=src python -m vulnfolio.cli --driver ansible --profile demo-profile --input tests/fixtures/ansible.json
@@ -85,6 +92,6 @@ PYTHONPATH=src python -m unittest discover -s tests -v
 - **[Issues](https://github.com/zawa356/vulnfolio/issues)** — 作業単位・受入条件・技術調査・検討事項
 - **[Pull Requests](https://github.com/zawa356/vulnfolio/pulls)** — 実装・レビュー・CI・変更履歴
 
-最初の目標は **[M0 — CVE→DB→Web](https://github.com/zawa356/vulnfolio/milestone/1)**。各イテレーションで動作する縦スライスを完成させた後、次の優先順位を見直します。Issueを作成し、ブランチ・PRを紐付け、CIと受入条件を満たしてからマージする運用です。
+**[M0 — CVE→DB→Web](https://github.com/zawa356/vulnfolio/milestone/1)は完了**、次は **[M1 — Asset Relevance](https://github.com/zawa356/vulnfolio/milestone/2)** を進めます。各イテレーションで動作する縦スライスを完成させた後、次の優先順位を見直します。Issueを作成し、ブランチ・PRを紐付け、CIと受入条件を満たしてからマージする運用です。
 
 **進捗・優先順位・完了判定はGitHub Issues/Projects/Milestonesを正本**とします。`docs/roadmap.md`は当初の実装方針・長期候補の参考資料であり、進行状況の二重管理はしません。
