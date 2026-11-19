@@ -1,7 +1,9 @@
-# ロードマップ・検証計画
+# 初期ロードマップ・検証計画（履歴資料）
 
 - 更新日: 2026-11-19
-- 状態: **開発の優先順案**。実装順は検証結果で調整する。
+- 状態: **2026-11-19に策定された初期の計画案・調査スナップショット（履歴）**。
+
+> **注意:** 本文の `- [ ]` は策定当時の未完了項目を保持しており、現在の実装進捗を表しません。**最新の作業状態とMilestone完了判定は[GitHub Roadmap Issue #2](https://github.com/zawa356/vulnfolio/issues/2) / [Milestones](https://github.com/zawa356/vulnfolio/milestones)が正本**です。M0完了・M1a/M1b完了（[PR #14](https://github.com/zawa356/vulnfolio/pull/14)、[PR #22](https://github.com/zawa356/vulnfolio/pull/22)、[PR #25](https://github.com/zawa356/vulnfolio/pull/25)）。新規タスクはここにチェックを重複登録しません。
 - 最優先成果物: **外部の既存脆弱性データを使った、閲覧・検索可能な統合Webダッシュボード**
 - 方針: 追加API従量課金0円を目標、既存OSS無改造、少数サービスで稼働
 
