@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'src/vulnfolio/asset_*.py'
+      - 'src/vulnfolio/vulnerability_api.py'
+      - 'src/vulnfolio/ingest_server.py'
       - 'src/vulnfolio/web/environment.*'
       - 'scripts/m1_browser_smoke.py'
       - '.github/workflows/m1-browser.yml'
