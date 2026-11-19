@@ -154,7 +154,10 @@ class InventoryImporter:
                     VALUES(?,?,?,?,?,?)
                     ON CONFLICT(asset_id) DO UPDATE SET
                       import_id=excluded.import_id,collector=excluded.collector,
-                      observed_at=excluded.observed_at,patches_json=excluded.patches_json,
+                      observed_at=excluded.observed_at,
+                      patches_json=CASE WHEN excluded.patches_json<>'[]'
+                                        THEN excluded.patches_json
+                                        ELSE asset_inventory_snapshots.patches_json END,
                       imported_at=excluded.imported_at
                 """, (asset_id, batch_id, parsed["collector"], parsed["observed_at"],
                       json.dumps(item["patches"]), imported_at))
