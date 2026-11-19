@@ -47,3 +47,15 @@ OpenCTIは攻撃者、マルウェア、キャンペーン等の関係分析に�
 ---
 
 この文書は対話による要件調査結果を整理したものです。詳細の「確定」「候補」「未決」は各文書に記載しています。
+
+## 開発管理（GitHubを正本とする）
+
+- **[Development Board](https://github.com/users/zawa356/projects/3)** — GitHub ProjectsのTodo / In Progress / Doneで作業状態を追跡
+- **[Roadmap Issue #2](https://github.com/zawa356/vulnfolio/issues/2)** — Epic・Milestone・Backlogの入口
+- **[Milestones](https://github.com/zawa356/vulnfolio/milestones)** — 動く機能の到達目標（期日は固定しない）
+- **[Issues](https://github.com/zawa356/vulnfolio/issues)** — 作業単位・受入条件・技術調査・検討事項
+- **[Pull Requests](https://github.com/zawa356/vulnfolio/pulls)** — 実装・レビュー・CI・変更履歴
+
+最初の目標は **[M0 — CVE→DB→Web](https://github.com/zawa356/vulnfolio/milestone/1)**。各イテレーションで動作する縦スライスを完成させた後、次の優先順位を見直します。Issueを作成し、ブランチ・PRを紐付け、CIと受入条件を満たしてからマージする運用です。
+
+**進捗・優先順位・完了判定はGitHub Issues/Projects/Milestonesを正本**とします。`docs/roadmap.md`は当初の実装方針・長期候補の参考資料であり、進行状況の二重管理はしません。
