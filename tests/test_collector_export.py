@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+import subprocess
+import sys
 from tempfile import TemporaryDirectory
 import unittest
 
@@ -141,6 +143,21 @@ class ExportTests(unittest.TestCase):
             self.assertEqual(output.stat().st_mode & 0o777, 0o600)
         with self.assertRaises(CollectorError):
             save_report(output, report)
+
+    def test_cli_offline_export_creates_importable_json(self):
+        write_artifact(self.path, "linux-node", linux_facts())
+        output = self.path / "private" / "result.json"
+        cmd = [
+            sys.executable, "-m", "vulnfolio.collector_export",
+            "--artifacts", str(self.path), "--expected-host", "linux-node",
+            "--profile", PROFILE, "--output", str(output),
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("1 host observations", result.stdout)
+        data = json.loads(output.read_text(encoding="utf-8"))
+        self.assertEqual(data["profile_id"], PROFILE)
+        validate_envelope(data, PROFILE)
 
     def test_artifact_does_not_contain_unrelated_hostvars(self):
         payload = linux_facts()
