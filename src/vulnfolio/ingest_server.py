@@ -23,7 +23,7 @@ def create_ingest_app(
 ) -> FastAPI:
     app = FastAPI(
         title="vulnfolio collector ingest",
-        version="0.2.5",
+        version="0.3.0",
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
