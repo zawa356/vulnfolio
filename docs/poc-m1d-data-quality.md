@@ -108,7 +108,31 @@ v0.1の`inventory_scope=reported`からは完全性を推測しない。互換�
 - Stable Keyのないv0.1やv0.2は**従来のホスト名照合へフォールバック**。再利用名・Renameで誤認・重複する可能性があり、実機運用前にKeyの選定が必要。
 - Stable Keyを秘密の認証情報・パスワードとして使わない。個体識別情報もインベントリ同様に非公開管理する。
 
-## 5. ローカル収集CLI（実機接続なしでも試せる）
+## 5. 最短デモ：実機接続なしのGUI検証
+
+`scripts/m1d_demo.py`は**架空CVE（2099年）・架空Linux/Windows・Ansible/Vuls 2系統の出典・Windows KB・対応履歴**を一つのSQLiteに作成する。CIRCLなどの外部API、SSH、WinRM、HTTPS送信は呼び出さない。**既存DBは上書きしない**。
+
+```bash
+python -m pip install -e .
+python scripts/m1d_demo.py --db private-data/m1d-demo.sqlite
+
+# Linux / WSL / macOS
+VULNFOLIO_DB=private-data/m1d-demo.sqlite \\
+  uvicorn vulnfolio.vulnerability_api:app --host 127.0.0.1 --port 8000
+```
+
+Windows PowerShellでは以下。
+
+```powershell
+$env:VULNFOLIO_DB = (Resolve-Path 'private-data/m1d-demo.sqlite').Path
+python -m uvicorn vulnfolio.vulnerability_api:app --host 127.0.0.1 --port 8000
+```
+
+ブラウザで <http://127.0.0.1:8000/environment> を開き、`M1d Synthetic Lab`から、`lab-linux`のAnsible/Vuls両観測、`lab-windows`のOS Build・KB、架空CVE候補と`Investigating`の対応履歴を確認する。
+
+**デモDBを本番データと混ぜないこと。** 作成先は`.gitignore`配下の`private-data/`を推奨。PoCをやり直す場合は、対象DBを確認のうえ手作業で破棄してから再作成する。
+
+## 6. ローカル収集CLI（実機接続なしでも試せる）
 
 旧v0.1出力は従来どおり**デフォルトで利用可能**。v0.2の明示選択と安定IDのマップは次のとおり。
 
@@ -129,7 +153,7 @@ CLIのv0.2出力は非空の項目を`partial`、空項目を`unknown`と保守�
 
 次に[My Environment](poc-m1.md)へローカル手動インポート、または[期限付きTokenのHTTPS送信PoC](poc-m1c-https.md)からインポートする。両方の経路で同じValidator/Importerを使用する。
 
-## 6. API / UI
+## 7. API / UI
 
 既存レスポンスとの互換性を維持する。
 
@@ -139,7 +163,7 @@ CLIのv0.2出力は非空の項目を`partial`、空項目を`unknown`と保守�
 - WebのMy Environment: OS Build、Collector名、Coverage、日時を出典別に表示。`unknown`はあくまで未確認であり「脆弱性がない」とは表示しない。
 - `POST /api/v1/profiles/{id}/imports`と`POST /api/v1/ingest/profiles/{id}/imports`: v0.1/v0.2を受け入れ、新規/重複の応答に`stale_skipped`を追加。
 
-## 7. オフラインテストと残留リスク
+## 8. オフラインテストと残留リスク
 
 ```bash
 python -m pip install -e .
@@ -151,7 +175,7 @@ node --check src/vulnfolio/web/environment.js
 python scripts/m1_browser_smoke.py
 ```
 
-- Ansible・Vulsの同名ホスト、明示的な完全空観測、部分観測、Unknown、古い観測、改名、別Key衝突、Windows OS Build、KB、既存DBの移行、JSON Schemaを合成データで確認。
+- 上記の**1コマンド合成デモ**、Ansible・Vulsの同名ホスト、明示的な完全空観測、部分観測、Unknown、古い観測、改名、別Key衝突、Windows OS Build、KB、既存DBの移行、JSON Schemaを合成データで確認。
 - **本番の適用済み/未適用のCVE判定は未実装**。RPMのバックポート、Debian Security Tracker、Windows累積KB、Scanner Finding取込は次の独立イテレーションで扱う。
 - `partial`のパッケージ情報は以前の版と新しい版が併存し得る。これを現在インストール中の確定一覧と扱わない。
 - 旧データの`legacy-unverified`はユーザー側で整合性確認が必要。正式な削除・エクスポート・データ保管ポリシーは本番公開前の[#33](https://github.com/zawa356/vulnfolio/issues/33)に残る。
