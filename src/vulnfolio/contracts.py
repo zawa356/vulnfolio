@@ -93,3 +93,42 @@ def finding(
         "source": driver,
         "assertion": "scanner_reported",
     }
+
+
+def upgrade_inventory_envelope_v02(
+    report: Mapping[str, Any],
+    asset_keys: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    """Opt-in v0.2 inventory output, conservatively marked partial/unknown.
+
+    Do not equate Ansible 'package_facts returned data' with proven complete
+    host coverage, and never label Windows Get-HotFix exhaustive. Explicit
+    'complete' is only permitted after a caller has independently verified it.
+    """
+    from datetime import datetime, timezone
+    import copy
+
+    converted = copy.deepcopy(dict(report))
+    if converted.get("schema_version") != "0.1.0":
+        raise InputError("Only v0.1 envelopes may be upgraded to v0.2")
+    if converted.get("findings"):
+        raise InputError("This inventory upgrader does not handle vulnerability findings")
+    converted["schema_version"] = "0.2.0"
+    converted["observed_at"] = converted.get("observed_at") or (
+        datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+    mapping = dict(asset_keys or {})
+    seen_names: set[str] = set()
+    for raw in converted.get("observations", []):
+        name = raw["asset_id"]
+        seen_names.add(name)
+        packages, patches = raw["packages"], raw["patches"]
+        raw["coverage"] = {
+            "packages": "partial" if packages else "unknown",
+            "patches": "partial" if patches else "unknown",
+        }
+        if name in mapping:
+            raw["asset_key"] = mapping[name]
+    if set(mapping) - seen_names:
+        raise InputError("Asset-key map refers to hosts absent from the collected observations")
+    return converted
