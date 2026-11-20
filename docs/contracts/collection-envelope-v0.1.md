@@ -1,10 +1,10 @@
-# CollectionEnvelope v0.1.0 — 現行入力契約
+# CollectionEnvelope v0.1.0 — 旧入力契約（現行Importerでも受理）
 
-- スキーマバージョン: **`0.1.0`**
+- スキーマバージョン: **`0.1.0`**（旧版・後方互換を維持）。**新機能は[v0.2.0](../poc-m1d-data-quality.md)を参照**。
 - 出力元の正本: [`contracts.py`](../../src/vulnfolio/contracts.py)、[Ansible Adapter](../../src/vulnfolio/adapters/ansible.py)
 - 現行Importerの正本: [`inventory_import.py`](../../src/vulnfolio/inventory_import.py)
 - 用途: **エージェントレス収集のオフライン結果**をツールに依存しない形式に正規化。上位レイヤーはAnsible/Vuls/OpenVAS固有形式を直接解釈しない。
-- 注意: JSONの形式と項目は実際のコードから導出。将来変更時はバージョン管理する。完全なJSON Schemaファイル・外部互換保証はまだない。
+- **JSON Schemaは[contracts/collection-envelope-0.1.0.schema.json](../../contracts/collection-envelope-0.1.0.schema.json)に追加済み**。新規開発には[v0.2 Schema](../../contracts/collection-envelope-0.2.0.schema.json)を推奨。外部の長期互換を保証する段階ではない。
 
 ## 現行JSONの例（架空の識別子）
 
@@ -78,8 +78,8 @@
 - JSON内容・文字列長・重複を検証後、SQLトランザクションで原子的に保存。
 - **同一Profileと同一正規化JSON内容**（キー順に依らないJSONのSHA-256）で二重取り込みを抑止。タイムスタンプが違えば別バッチ。
 - 手動登録製品とインポート製品は別テーブルで管理する。
-- 各観測の非空`packages`は同ホストの前回インポート製品を置換。**空配列・対象外ホストでは削除しない**ため、古い製品情報が残り得る。
-- 非空の`patches`のみ最後のKBスナップショットを更新。空配列は前回のKB情報を保持（情報の鮮度と確定的な欠如を区別する仕様は未完）。
+- 各観測の非空`packages`は**同一Collector**の前回製品だけを置換。**空配列・対象外ホストでは削除しない**ため、古い製品情報が残り得る。別Collectorの報告・手動入力は保持する。
+- 非空の`patches`のみ**同一Collectorの**KBスナップショットを更新。空配列は前回のKB情報を保持。**空で完全取得したと表すにはv0.2の`coverage=complete`が必要**。
 - `errors`は件数だけ保持。認証エラー本文や秘密文字列は永続化しない。
 - CVEとの照合は既存の**構造化`affected`製品名**を用い、バージョンの完全一致が記載されていても**修正状態の確定はしない**。
 
@@ -91,7 +91,7 @@
 | Vuls | OS/パッケージ観測、`scannedCves`があればFinding | **Findingを伴う入力は丸ごと拒否**。観測のみの出力なら取り込み可能 |
 | OpenVAS/Greenbone | NVT Findingと観測ホスト、パッケージ一覧は空が多い | 非空Findingを伴う入力は丸ごと拒否 |
 
-**この仕様は、完全なJSONの独立検証器・セキュアな業務アップロードAPIを提供するものではありません。** 認証・権限制御・厳密なスキーマ・安定資産ID・スキャナーFinding取込は後続Issueで設計する。
+**本書は旧v0.1互換契約の記録です。** v0.2では明示的な安定資産IDとCoverage、出典別の日時保存を追加。**スキャナーFinding取込、実機受入、本番RBACは未実装**（[M1d](../poc-m1d-data-quality.md)）。
 
 ## 関連資料
 
