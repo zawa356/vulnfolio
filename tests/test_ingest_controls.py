@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+import httpx
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
@@ -20,6 +21,7 @@ from vulnfolio.ingest_credentials import (
 )
 from vulnfolio.ingest_security import IngestRateLimiter
 from vulnfolio.ingest_server import create_ingest_app
+from vulnfolio.ingest_upload import send
 from vulnfolio.inventory_import import InventoryImporter
 
 
@@ -108,7 +110,7 @@ class SecurityControlsTests(unittest.TestCase):
                     response = client.post(self.url, json=self.envelope, headers=self.headers)
                     self.assertEqual(response.status_code, 503)
                 # Restore the valid original for the next case.
-                original = issue = {
+                original = {
                     "schema_version": 2,
                     "tokens": [{
                         "id": self.token_id,
@@ -198,6 +200,24 @@ class SecurityControlsTests(unittest.TestCase):
         time_value[0] = 11.0
         self.assertEqual(limiter.check_peer("three"), (0, False))
         self.assertLessEqual(len(limiter._buckets), 2)
+
+    def test_upload_client_respects_retry_after_and_caps_delay(self):
+        payload = json.dumps(self.envelope).encode("utf-8")
+        for header, expected in (("30", 30), ("99999", 60), ("invalid", 1)):
+            calls = [0]
+
+            def responder(request):
+                calls[0] += 1
+                if calls[0] == 1:
+                    return httpx.Response(429, headers={"Retry-After": header})
+                return httpx.Response(201, json={"import_id": "test-id", "duplicate": False})
+
+            with patch("vulnfolio.ingest_upload.time.sleep") as delay:
+                result = send("https://example.test", self.profile, payload, self.token,
+                              attempts=2, _transport=httpx.MockTransport(responder))
+            self.assertEqual(result["import_id"], "test-id")
+            self.assertEqual(calls[0], 2)
+            delay.assert_called_once_with(expected)
 
     def test_audit_explicit_retention(self):
         with self.client() as client:
