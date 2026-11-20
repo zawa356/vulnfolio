@@ -24,7 +24,9 @@ uvicorn vulnfolio.vulnerability_api:app --host 127.0.0.1 --port 8000
 
 My Environmentでは、案件Profile→Asset→Installed Softwareを手動登録、または**共通JSONを手動インポート**し、ローカルに保存したCVEの構造化`affected`情報に基づく**影響候補**を表示できます。案件別の対応状況も記録します。候補は影響確定ではなく、OSベンダーのバックポート/KB判定はまだできません。
 
-**認証機能はありません。ループバックのみで起動し、顧客の機密資産データを投入しないでください。** [M1手動管理](docs/poc-m1.md) / [収集JSONインポート](docs/poc-m1-import.md)。
+**管理画面の利用者認証はありません。ループバックのみで起動し、顧客の機密資産データを投入しないでください。** [M1手動管理](docs/poc-m1.md) / [収集JSONインポート](docs/poc-m1-import.md)。
+
+実機なしでUIを試す場合は、`python scripts/m1d_demo.py --db private-data/m1d-demo.sqlite`で**架空データ（Linux/Windows・2種Collector・架空CVE）**を生成し、そのDBを`VULNFOLIO_DB`で指定して起動できます（[M1dデモ手順](docs/poc-m1d-data-quality.md)）。
 
 取得元が利用できない場合でも、既存のローカル保存データは表示できます。PoCには認証を実装していないため**インターネット公開しない**でください。UIはTablerのバージョン固定CDNを使用しています。
 
