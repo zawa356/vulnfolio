@@ -84,7 +84,7 @@ def send(
         "Authorization": "Bearer " + token,
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "User-Agent": "vulnfolio-collector/0.2",
+        "User-Agent": "vulnfolio-collector/0.3",
     }
     # trust_env=False avoids unintended environment proxying of bearer secrets.
     with httpx.Client(verify=context, trust_env=False, follow_redirects=False, timeout=12,

@@ -185,3 +185,15 @@ VulnMCPとの機能重複はまず調査し、安易に同名ツールを再実�
 - TCP peerあたり60回/分、認証済みTokenあたり30回/分を**単一プロセス**で制限。429 + Retry-Afterを返す。分散制限・公開用Ingressは[Release Gate #33](https://github.com/zawa356/vulnfolio/issues/33)
 
 [操作・移行・監査手順](poc-m1c-https.md)を参照。
+
+
+## M1d Source Observation（2026-11-20）
+
+`CollectionEnvelope 0.1.0`を後方互換で維持し、`0.2.0`の`asset_key`と項目別`coverage`を導入した。受信は既存の手動取込/HTTPSの**同一Importer**に集約する。
+
+- 新しい`source_observations`と`source_products`は**Asset×Collectorごと**のOS Build・パッケージ・KB・品質状態・観測時刻を保持する。
+- `asset_stable_keys`はProfile内の明示的な安定Keyを内部Asset IDへ関連付ける。Keyの不一致は名前一致で自動マージせず拒否する。
+- v0.1由来の旧インポートデータは一度限り`legacy-unverified`へコピーして保持し、出典が曖昧だった事実を隠さない。
+- 上位のCVE照合は**候補**としてのみ返す。複数Collectorの古い/部分観測結果を確定的な影響判断として利用しない。
+
+詳細: [M1d品質・運用](poc-m1d-data-quality.md)、[v0.2 JSON Schema](../contracts/collection-envelope-0.2.0.schema.json)。

@@ -125,6 +125,8 @@ class AssetRepository(VulnerabilityRepository):
                 );
                 CREATE INDEX IF NOT EXISTS idx_import_products_asset ON imported_products(asset_id);
             """)
+            from vulnfolio.observation_store import initialize_observations
+            initialize_observations(conn)
 
     def _profile_exists(self, conn: sqlite3.Connection, profile_id: str) -> None:
         if conn.execute("SELECT 1 FROM profiles WHERE id=?", (profile_id,)).fetchone() is None:
@@ -220,13 +222,20 @@ class AssetRepository(VulnerabilityRepository):
             return [dict(row) for row in conn.execute("""
                 SELECT * FROM (
                 SELECT id,asset_id,vendor,name,version,created_at,'manual' AS origin,
-                       '' AS epoch,'' AS release,'' AS arch,'' AS manager
+                       '' AS epoch,'' AS release,'' AS arch,'' AS manager,
+                       '' AS source_collector, NULL AS observed_at, 'manual' AS coverage
                 FROM asset_products WHERE asset_id=?
                 UNION ALL
-                SELECT id,asset_id,vendor,name,version,'' AS created_at,'imported' AS origin,
-                       epoch,release,arch,manager
-                FROM imported_products WHERE asset_id=?
-                ) ORDER BY name COLLATE NOCASE,version
+                SELECT p.id,p.asset_id,p.vendor,p.name,p.version,
+                       b.imported_at AS created_at,'imported' AS origin,
+                       p.epoch,p.release,p.arch,p.manager,p.collector AS source_collector,
+                       COALESCE(b.observed_at,b.imported_at) AS observed_at,
+                       o.packages_state AS coverage
+                FROM source_products p
+                JOIN inventory_imports b ON b.id=p.import_id
+                LEFT JOIN source_observations o ON o.asset_id=p.asset_id AND o.collector=p.collector
+                WHERE p.asset_id=?
+                ) ORDER BY name COLLATE NOCASE,version,source_collector
             """, (asset_id, asset_id)).fetchall()]
 
     def delete_product(self, product_id: str) -> None:
@@ -281,13 +290,17 @@ class AssetRepository(VulnerabilityRepository):
             products = [dict(row) for row in conn.execute("""
                 SELECT * FROM (
                 SELECT s.id,s.asset_id,s.vendor,s.name,s.version,
-                       a.name AS asset_name,a.profile_id
+                       a.name AS asset_name,a.profile_id,
+                       'manual' AS source_collector,NULL AS observed_at
                 FROM asset_products s JOIN assets a ON s.asset_id=a.id
                 WHERE a.profile_id=?
                 UNION ALL
                 SELECT s.id,s.asset_id,s.vendor,s.name,s.version,
-                       a.name AS asset_name,a.profile_id
-                FROM imported_products s JOIN assets a ON s.asset_id=a.id
+                       a.name AS asset_name,a.profile_id,
+                       s.collector AS source_collector,
+                       COALESCE(b.observed_at,b.imported_at) AS observed_at
+                FROM source_products s JOIN assets a ON s.asset_id=a.id
+                JOIN inventory_imports b ON b.id=s.import_id
                 WHERE a.profile_id=?
                 ) ORDER BY asset_name,name
             """, (profile_id, profile_id)).fetchall()]

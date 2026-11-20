@@ -147,7 +147,10 @@ def build_asset_router(repo: AssetRepository) -> APIRouter:
     @router.get("/assets/{asset_id}/inventory")
     def inventory_snapshot(asset_id: str):
         try:
-            return {"snapshot": importer.asset_snapshot(asset_id)}
+            return {
+                "snapshot": importer.asset_snapshot(asset_id),
+                "sources": importer.source_snapshots(asset_id),
+            }
         except NotFound as exc:
             translate_error(exc)
 

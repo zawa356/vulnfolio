@@ -15,6 +15,7 @@ from playwright.sync_api import sync_playwright
 
 from vulnfolio.asset_storage import AssetRepository
 from vulnfolio.adapters.ansible import AnsibleAdapter
+from vulnfolio.contracts import upgrade_inventory_envelope_v02
 from vulnfolio.vulnerabilities import from_cve_record
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -106,7 +107,10 @@ def main():
                 incoming["hosts"]["rhel-demo"]["ansible_facts"]["packages"]["fluxctl"] = [
                     {"name": "fluxctl", "version": "1.2.0", "source": "rpm"}
                 ]
-                envelope = AnsibleAdapter().normalize(incoming, profile_id)
+                envelope = upgrade_inventory_envelope_v02(
+                    AnsibleAdapter().normalize(incoming, profile_id),
+                    {"rhel-demo": "synthetic:browser-smoke-rhel"},
+                )
                 page.locator("#import-file").set_input_files({
                     "name": "collected.json",
                     "mimeType": "application/json",
@@ -116,7 +120,11 @@ def main():
                 page.get_by_text("Imported: 2 assets", exact=False).wait_for(timeout=10000)
                 page.locator("#candidate-rows").get_by_text(CVE).wait_for(timeout=10000)
                 assert "vendor unverified" in page.locator("#candidate-rows").inner_text()
-                assert "imported" in page.locator("#product-rows").inner_text().lower()
+                product_text = page.locator("#product-rows").inner_text().lower()
+                assert "imported" in product_text
+                assert "ansible" in product_text
+                assert "coverage: partial" in product_text
+                assert "os build" in page.locator("#inventory-snapshot").inner_text().lower()
                 assert not errors, errors
                 browser.close()
             print("M1 BROWSER PASS: manual profile/asset/assessment + canonical JSON upload -> candidates")

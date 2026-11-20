@@ -117,11 +117,22 @@ async function loadInventorySnapshot() {
     return;
   }
   const result = await api("/api/v1/assets/" + encodeURIComponent(state.asset) + "/inventory");
-  const snap = result.snapshot;
-  byId("inventory-snapshot").textContent = snap ?
-    "Collected: " + snap.collector + " · " + (snap.observed_at || snap.imported_at) +
-    " · KB/patch IDs: " + (snap.patches.length ? snap.patches.join(", ") : "not reported") :
-    "No imported inventory for this asset.";
+  const sources = result.sources || (result.snapshot ? [result.snapshot] : []);
+  if (!sources.length) {
+    byId("inventory-snapshot").textContent = "No imported inventory for this asset.";
+    return;
+  }
+  byId("inventory-snapshot").textContent = sources.map((snap) => {
+    const patchLabel = snap.patches_state === "unknown"
+      ? "patch inventory unverified"
+      : "KB/patch IDs: " + (snap.patches.length ? snap.patches.join(", ") : "verified empty");
+    return snap.collector + " · observed " + (snap.observed_at || "time unknown") +
+      " · packages: " + snap.packages_state + " (" +
+      (snap.packages_observed_at || "never verified") + ")" +
+      " · patches: " + snap.patches_state + " (" +
+      (snap.patches_observed_at || "never verified") + ")" +
+      " · OS build: " + (snap.os_build || "unknown") + " · " + patchLabel;
+  }).join(" | ");
 }
 
 async function loadProducts() {
@@ -138,7 +149,12 @@ async function loadProducts() {
     tr.append(cell(product.vendor || "—"), cell(product.name), cell(product.version || "Unknown"));
     const td = document.createElement("td");
     if (product.origin === "imported") {
-      td.append(document.createTextNode("Imported (" + (product.manager || "unknown manager") + ")"));
+      td.append(document.createTextNode(
+        "Imported · " + (product.source_collector || "unknown collector") +
+        " · " + (product.manager || "unknown manager") +
+        " · coverage: " + (product.coverage || "unknown") +
+        " · seen: " + (product.observed_at || "unknown")
+      ));
     } else {
       const remove = document.createElement("button");
       remove.type = "button";
@@ -201,6 +217,10 @@ async function loadCandidates() {
       ? "Exact version listed" : "Product name only");
     basis.title = candidate.evidence;
     if (!candidate.vendor_verified) basis.append(document.createTextNode(" · vendor unverified"));
+    basis.append(document.createTextNode(
+      " · " + (candidate.observation_source || "unknown source") +
+      (candidate.observed_at ? " · seen " + candidate.observed_at : " · time unknown")
+    ));
 
     const controls = document.createElement("td");
     const group = document.createElement("div");
@@ -255,7 +275,7 @@ byId("import-form").addEventListener("submit", (event) => {
     byId("import-summary").textContent =
       (result.duplicate ? "Already imported (no changes): " : "Imported: ") +
       result.assets_seen + " assets · " + result.error_count + " collection errors · " +
-      result.collector;
+      (result.stale_skipped || 0) + " older observations ignored · " + result.collector;
     byId("import-form").reset();
     await loadAssets(state.asset);
   }, "Inventory processing complete.");

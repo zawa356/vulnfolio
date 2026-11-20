@@ -1,0 +1,301 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/zawa356/vulnfolio/blob/main/contracts/collection-envelope-0.2.0.schema.json",
+  "title": "vulnfolio M1 inventory import envelope 0.2.0",
+  "description": "This is the inventory IMPORT subset. Nonempty scanner findings are not accepted by the current importer.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "profile_id",
+    "collector",
+    "status",
+    "observations",
+    "findings",
+    "errors",
+    "observed_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.2.0"
+    },
+    "profile_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "collector": {
+      "type": "object",
+      "required": [
+        "driver"
+      ],
+      "properties": {
+        "driver": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 64,
+      "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "status": {
+      "enum": [
+        "success",
+        "partial_success",
+        "failed",
+        "empty"
+      ]
+    },
+    "observations": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "required": [
+          "asset_id",
+          "os",
+          "packages",
+          "patches",
+          "coverage"
+        ],
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 180
+          },
+          "os": {
+            "type": "object",
+            "properties": {
+              "family": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "distribution": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "version": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "build": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "packages": {
+            "type": "array",
+            "maxItems": 2000,
+            "items": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 180
+                },
+                "version": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 120
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "epoch": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 60
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "release": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 120
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "arch": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "manager": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "patches": {
+            "type": "array",
+            "maxItems": 2000,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          },
+          "inventory_scope": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "asset_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 180
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "coverage": {
+            "type": "object",
+            "required": [
+              "packages",
+              "patches"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "packages": {
+                "enum": [
+                  "complete",
+                  "partial",
+                  "unknown"
+                ]
+              },
+              "patches": {
+                "enum": [
+                  "complete",
+                  "partial",
+                  "unknown"
+                ]
+              }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "coverage": {
+                  "properties": {
+                    "packages": {
+                      "const": "unknown"
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "packages": {
+                  "maxItems": 0
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "coverage": {
+                  "properties": {
+                    "patches": {
+                      "const": "unknown"
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "patches": {
+                  "maxItems": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "findings": {
+      "type": "array",
+      "maxItems": 0
+    },
+    "errors": {
+      "type": "array",
+      "maxItems": 200
+    }
+  }
+}

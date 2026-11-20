@@ -1,7 +1,7 @@
 # データ収集・インポート方式（設計案）
 
 - 更新日: 2026-11-19
-- 状態: **収集方針は合意。共通JSON v0.1.0は実装済み、Linux/Windows Ansible収集コードはM1cで追加（実機は未検証）**
+- 状態: **共通JSON v0.1互換・v0.2（Coverage/Stable Key）、Collector別保存をM1dで実装。Linux/Windows収集コードはM1cで追加（実機未検証）**
 - 初期目標: **無料/低運用負荷**、OSや現場ごとの違いを吸収する収集アダプター構成
 
 ## 1. 収集経路の分離
@@ -77,7 +77,7 @@ flowchart LR
 
 ### 実装済みの収集JSON契約（v0.1.0）
 
-**現行版の正本は[CollectionEnvelope v0.1.0](contracts/collection-envelope-v0.1.md)**（[コード](../src/vulnfolio/contracts.py)）です。以下は**実装に合う簡略例**であり、当初の`schema_version: 0.1-draft`、`profile_ref`、`assets`を用いた旧案は現行Importerに受理されません。
+**v0.1互換仕様は[旧CollectionEnvelope](contracts/collection-envelope-v0.1.md)、新規は[M1d v0.2](poc-m1d-data-quality.md)と[JSON Schema](../contracts/collection-envelope-0.2.0.schema.json)**（[コード](../src/vulnfolio/contracts.py)）を参照。以下は**v0.1の旧形式による簡略例**であり、当初の`schema_version: 0.1-draft`、`profile_ref`、`assets`を用いた旧案は現行Importerに受理されません。
 
 ```json
 {
@@ -101,7 +101,7 @@ flowchart LR
 
 - `observations`は資産観測、`findings`はスキャナーの判定で別物です。
 - M1bの**ローカル手動インポートは実装済み**。`findings`が1件でもある場合は全件拒否。Vuls/OpenVASのFindingは未対応。
-- **実機向けAnsible/PowerShell収集コードはM1cで追加（実機の通信検証は未実施）**。**認証付きHTTPS送信PoCは別モジュールとして追加**（[仕様と制約](poc-m1c-https.md)）。実環境/LAN越しの受入は未実施。Issue #24/#30/#31で進行管理します。
+- **実機向けAnsible/PowerShell収集コードはM1cで追加（実機の通信検証は未実施）**。M1dで**完全・部分・未確認の区別、Collector別の観測保存、安定資産ID、Windows Build保存**を追加。**認証付きHTTPS送信PoCは別モジュールとして追加**（[仕様と制約](poc-m1c-https.md)）。実環境/LAN越しの受入は未実施。Issue #24/#30/#31で進行管理します。
 - `os.build`は現行Importerで入力検証のみ実施し、AssetのDB列には保存していません。Windows OSビルド照合は今後の課題。
 
 ### 正規化・照合の注意点

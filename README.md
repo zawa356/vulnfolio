@@ -4,7 +4,7 @@
 
 CVE/KEV/EPSS等の公式データと、SNS・セキュリティコミュニティ等の非公式シグナルを整理し、次に問題化しそうな脆弱性・現在進行中の脅威・自分が対応すべき事項を、一つのWebダッシュボードにまとめるOSSプロジェクトです。
 
-> **実装状況（2026-11-19）：M0 / M1a / M1bとM1c収集コードPoC完了。M1c認証付きHTTPSアップロード専用アプリを追加。** 実Linux/Windows接続とLAN/本番運用は未検証です。SNS・LLM・MCPは未実装です。進捗の最新情報は[GitHub Issues](https://github.com/zawa356/vulnfolio/issues)を参照してください。
+> **実装状況（2026-11-20）：M0 / M1a / M1b / M1cのローカルPoCに加え、M1dで複数Collectorの出典・完全性・鮮度・安定資産IDを整備。** 実Linux/Windows接続とLAN/本番運用は未検証です。SNS・LLM・MCPは未実装です。進捗の最新情報は[GitHub Issues](https://github.com/zawa356/vulnfolio/issues)を参照してください。
 
 ## Quick start — M0 / M1 local PoC
 
@@ -24,7 +24,9 @@ uvicorn vulnfolio.vulnerability_api:app --host 127.0.0.1 --port 8000
 
 My Environmentでは、案件Profile→Asset→Installed Softwareを手動登録、または**共通JSONを手動インポート**し、ローカルに保存したCVEの構造化`affected`情報に基づく**影響候補**を表示できます。案件別の対応状況も記録します。候補は影響確定ではなく、OSベンダーのバックポート/KB判定はまだできません。
 
-**認証機能はありません。ループバックのみで起動し、顧客の機密資産データを投入しないでください。** [M1手動管理](docs/poc-m1.md) / [収集JSONインポート](docs/poc-m1-import.md)。
+**管理画面の利用者認証はありません。ループバックのみで起動し、顧客の機密資産データを投入しないでください。** [M1手動管理](docs/poc-m1.md) / [収集JSONインポート](docs/poc-m1-import.md)。
+
+実機なしでUIを試す場合は、`python scripts/m1d_demo.py --db private-data/m1d-demo.sqlite`で**架空データ（Linux/Windows・2種Collector・架空CVE）**を生成し、そのDBを`VULNFOLIO_DB`で指定して起動できます（[M1dデモ手順](docs/poc-m1d-data-quality.md)）。
 
 取得元が利用できない場合でも、既存のローカル保存データは表示できます。PoCには認証を実装していないため**インターネット公開しない**でください。UIはTablerのバージョン固定CDNを使用しています。
 
@@ -53,10 +55,12 @@ My Environmentでは、案件Profile→Asset→Installed Softwareを手動登録
 | [M1b JSONインポート](docs/poc-m1-import.md) | 収集JSONをProfileへ手動アップロード・冪等取込する手順 |
 | [M1c Agentless収集PoC](docs/poc-m1c-agentless.md) | Linux SSH / Windows WinRMの読み取り収集の実行方法・安全上の制限 |
 | [M1c HTTPSアップロードPoC](docs/poc-m1c-https.md) | **専用`ingest_server:app`**、期限付きトークン、TLS、監査・PoCレート制限、再送試験 |
+| **[M1d 収集データ品質](docs/poc-m1d-data-quality.md)** | **v0.2 JSON、出典別観測、鮮度、完全/部分/未確認、安定ID、旧DB移行、制限** |
 | [Phase 0 PoC](docs/poc-phase0.md) | 3種類の収集レポートの共通変換・検証結果・制約 |
 | [OSS比較](docs/oss-comparison.md) | Vulnerability-Lookup vs OpenCTI、選定根拠 |
 | [収集方式・データ契約](docs/data-ingestion.md) | SNS、エージェントレス資産収集、収集方式 |
-| [CollectionEnvelope v0.1.0](docs/contracts/collection-envelope-v0.1.md) | **実装済みJSON入力契約・現在の制限** |
+| [CollectionEnvelope v0.1.0](docs/contracts/collection-envelope-v0.1.md) | 旧入力契約（後方互換で利用可能） |
+| [CollectionEnvelope v0.2.0 Schema](contracts/collection-envelope-0.2.0.schema.json) | **現行の新入力契約**（資産Key・項目別Coverage） |
 | [UI設計原則](docs/ui-guidelines.md) | 標準キット優先、情報設計、配色 |
 | [初期ロードマップ（履歴資料）](docs/roadmap.md) | 当初の計画案。**現在の作業状態はGitHub Issuesが正本** |
 
@@ -74,7 +78,7 @@ OpenCTIは攻撃者、マルウェア、キャンペーン等の関係分析に�
 
 ## Phase 0 オフラインPoC（M0に取り込み済み）
 
-Ansible / Vuls / OpenVASの**保存済み・サンプルレポート**を、同じJSON契約に変換するアダプターとテストはmainに取り込み済みです。**Linux/WindowsへのSSH/WinRM収集コードはM1cで追加しましたが、実機接続は未検証**です。**管理アプリから分離した受信専用`vulnfolio.ingest_server:app`とトークン認証付きHTTPS JSON送信PoCを追加**しています（[導入と残留リスク](docs/poc-m1c-https.md)）。実機・LAN/本番受入と自動スケジューリングは未完了です。共通JSONのローカル**手動インポートはM1bで実装済み**です。
+Ansible / Vuls / OpenVASの**保存済み・サンプルレポート**を、同じJSON契約に変換するアダプターとテストはmainに取り込み済みです。**Linux/WindowsへのSSH/WinRM収集コードはM1cで追加しましたが、実機接続は未検証**です。**管理アプリから分離した受信専用`vulnfolio.ingest_server:app`とトークン認証付きHTTPS JSON送信PoCを追加**しています。M1dでは**Collector別のインベントリ保存、OS Build、Coverage、観測時刻、安定資産IDの契約**を追加しました（[導入と残留リスク](docs/poc-m1c-https.md)）。実機・LAN/本番受入と自動スケジューリングは未完了です。共通JSONのローカル**手動インポートはM1bで実装済み**です。
 
 ```bash
 PYTHONPATH=src python -m vulnfolio.cli --driver ansible --profile demo-profile --input tests/fixtures/ansible.json
@@ -97,6 +101,6 @@ PYTHONPATH=src python -m unittest discover -s tests -v
 - **[Issues](https://github.com/zawa356/vulnfolio/issues)** — 作業単位・受入条件・技術調査・検討事項
 - **[Pull Requests](https://github.com/zawa356/vulnfolio/pulls)** — 実装・レビュー・CI・変更履歴
 
-**[M0 — CVE→DB→Web](https://github.com/zawa356/vulnfolio/milestone/1)は完了**、現在は **[M1 — Asset Relevance](https://github.com/zawa356/vulnfolio/milestone/2)** の収集・転送PoCから受入検証へ進んでいます（#24 / #30 / #31）。各イテレーションで動作する縦スライスを完成させた後、次の優先順位を見直します。Issueを作成し、ブランチ・PRを紐付け、CIと受入条件を満たしてからマージする運用です。
+**[M0 — CVE→DB→Web](https://github.com/zawa356/vulnfolio/milestone/1)は完了**、現在は **[M1 — Asset Relevance](https://github.com/zawa356/vulnfolio/milestone/2)** の収集・転送・品質PoCを進めています（M1d [#38](https://github.com/zawa356/vulnfolio/issues/38)、実機受入 [#30](https://github.com/zawa356/vulnfolio/issues/30)）。各イテレーションで動作する縦スライスを完成させた後、次の優先順位を見直します。Issueを作成し、ブランチ・PRを紐付け、CIと受入条件を満たしてからマージする運用です。
 
 **進捗・優先順位・完了判定はGitHub Issues/Projects/Milestonesを正本**とします。`docs/roadmap.md`は当初の実装方針・長期候補の参考資料であり、進行状況の二重管理はしません。
