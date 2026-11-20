@@ -176,3 +176,12 @@ VulnMCPとの機能重複はまず調査し、安易に同名ツールを再実�
 - 両アプリはPoC上同じSQLite/Importerを利用する。共有DBの運用権限、監査、レート制限、Ingress分離、本番RBACの設計は[Release Gate #33](https://github.com/zawa356/vulnfolio/issues/33)に残す。
 
 この分離により**誤って受信ポートを接続公開しても管理エンドポイントを一緒に公開しない**構造となる。ただし受信アプリの運用環境・公開自体の安全性を保証するものではない。
+
+
+### M1c 受信認証ライフサイクル（PoC）
+
+- HTTPS受信トークンはv2形式。発行後**標準7日、最大30日**で期限切れ（発行・失効・明示v1移行CLIあり）
+- 監査記録はサーバーのSQLite `ingest_audit` に**本文・Bearer値・接続元IPを除いて**保存し、Web/APIでは閲覧不可
+- TCP peerあたり60回/分、認証済みTokenあたり30回/分を**単一プロセス**で制限。429 + Retry-Afterを返す。分散制限・公開用Ingressは[Release Gate #33](https://github.com/zawa356/vulnfolio/issues/33)
+
+[操作・移行・監査手順](poc-m1c-https.md)を参照。
