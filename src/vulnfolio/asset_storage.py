@@ -227,10 +227,12 @@ class AssetRepository(VulnerabilityRepository):
                 FROM asset_products WHERE asset_id=?
                 UNION ALL
                 SELECT p.id,p.asset_id,p.vendor,p.name,p.version,
-                       o.imported_at AS created_at,'imported' AS origin,
+                       b.imported_at AS created_at,'imported' AS origin,
                        p.epoch,p.release,p.arch,p.manager,p.collector AS source_collector,
-                       o.packages_observed_at AS observed_at,o.packages_state AS coverage
+                       COALESCE(b.observed_at,b.imported_at) AS observed_at,
+                       o.packages_state AS coverage
                 FROM source_products p
+                JOIN inventory_imports b ON b.id=p.import_id
                 LEFT JOIN source_observations o ON o.asset_id=p.asset_id AND o.collector=p.collector
                 WHERE p.asset_id=?
                 ) ORDER BY name COLLATE NOCASE,version,source_collector
@@ -288,13 +290,17 @@ class AssetRepository(VulnerabilityRepository):
             products = [dict(row) for row in conn.execute("""
                 SELECT * FROM (
                 SELECT s.id,s.asset_id,s.vendor,s.name,s.version,
-                       a.name AS asset_name,a.profile_id
+                       a.name AS asset_name,a.profile_id,
+                       'manual' AS source_collector,NULL AS observed_at
                 FROM asset_products s JOIN assets a ON s.asset_id=a.id
                 WHERE a.profile_id=?
                 UNION ALL
                 SELECT s.id,s.asset_id,s.vendor,s.name,s.version,
-                       a.name AS asset_name,a.profile_id
+                       a.name AS asset_name,a.profile_id,
+                       s.collector AS source_collector,
+                       COALESCE(b.observed_at,b.imported_at) AS observed_at
                 FROM source_products s JOIN assets a ON s.asset_id=a.id
+                JOIN inventory_imports b ON b.id=s.import_id
                 WHERE a.profile_id=?
                 ) ORDER BY asset_name,name
             """, (profile_id, profile_id)).fetchall()]
