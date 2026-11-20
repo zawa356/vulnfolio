@@ -52,7 +52,7 @@ My Environmentでは、案件Profile→Asset→Installed Softwareを手動登録
 | [M1a PoC](docs/poc-m1.md) | ローカル案件・資産登録、影響候補、対応履歴、権限上の制限 |
 | [M1b JSONインポート](docs/poc-m1-import.md) | 収集JSONをProfileへ手動アップロード・冪等取込する手順 |
 | [M1c Agentless収集PoC](docs/poc-m1c-agentless.md) | Linux SSH / Windows WinRMの読み取り収集の実行方法・安全上の制限 |
-| [M1c HTTPSアップロードPoC](docs/poc-m1c-https.md) | **専用`ingest_server:app`**、Profileスコープのトークン、TLS検証、再送、実プロセス試験 |
+| [M1c HTTPSアップロードPoC](docs/poc-m1c-https.md) | **専用`ingest_server:app`**、期限付きトークン、TLS、監査・PoCレート制限、再送試験 |
 | [Phase 0 PoC](docs/poc-phase0.md) | 3種類の収集レポートの共通変換・検証結果・制約 |
 | [OSS比較](docs/oss-comparison.md) | Vulnerability-Lookup vs OpenCTI、選定根拠 |
 | [収集方式・データ契約](docs/data-ingestion.md) | SNS、エージェントレス資産収集、収集方式 |
