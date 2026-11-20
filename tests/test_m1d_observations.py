@@ -136,6 +136,9 @@ class ObservationQualityTests(unittest.TestCase):
                          stamp="2026-11-20T11:00:00Z")
         self.imp.import_envelope(self.profile, partial)
         self.assertEqual({p["name"] for p in self.products()}, {"first", "second"})
+        observed = {p["name"]: p["observed_at"] for p in self.products()}
+        self.assertEqual(observed["first"], "2026-11-20T10:00:00Z")
+        self.assertEqual(observed["second"], "2026-11-20T11:00:00Z")
         self.assertEqual(self.snapshots()[0]["patches"], ["KB0001", "KB0002"])
         unknown = report(self.profile, products=[], patches=[],
                          coverage=("unknown", "unknown"),
@@ -147,6 +150,7 @@ class ObservationQualityTests(unittest.TestCase):
         self.assertEqual(current["patches_state"], "unknown")
         self.assertEqual(current["patches"], ["KB0001", "KB0002"])
         self.assertEqual(current["packages_observed_at"], "2026-11-20T11:00:00Z")
+        self.assertEqual({p["name"]: p["observed_at"] for p in self.products()}, observed)
         self.assertEqual(current["patches_observed_at"], "2026-11-20T11:00:00Z")
 
     def test_older_batch_is_ignored_without_renaming_asset(self):
