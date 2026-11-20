@@ -166,6 +166,15 @@ def _match_asset(conn: sqlite3.Connection, profile_id: str, item: dict, timestam
         return asset_id
     if named:
         asset_id = named["id"]
+        # Distinct explicit stable keys must never silently merge solely
+        # because DNS/NetBIOS/inventory names happen to be the same.
+        if key and conn.execute("""
+            SELECT 1 FROM asset_stable_keys
+            WHERE asset_id=? AND stable_key<>? LIMIT 1
+        """, (asset_id, key)).fetchone():
+            raise ImportValidationError(
+                "asset name is already bound to a different stable key; explicit reconciliation required"
+            )
         conn.execute("""
             UPDATE assets SET os_family=CASE WHEN ?<>'' THEN ? ELSE os_family END,
                 os_version=CASE WHEN ?<>'' THEN ? ELSE os_version END WHERE id=?
