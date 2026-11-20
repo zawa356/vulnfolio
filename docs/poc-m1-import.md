@@ -2,7 +2,7 @@
 
 - 更新日: 2026-11-19
 - 対応Issue: [#23](https://github.com/zawa356/vulnfolio/issues/23)
-- 種別: **最小PoC。現場へのSSH接続・HTTPS自動転送・認証はまだ実装していません。**
+- 種別: **M1b完成時の実装記録。** その後M1cで収集・送信PoC、M1dで観測品質を追加。実機・本番接続は未検証（[現行M1d](poc-m1d-data-quality.md)）。
 - 追加API: `POST /api/v1/profiles/{profile_id}/imports`（loopback限定）
 
 ## 1. 仕組み
@@ -10,7 +10,7 @@
 ```mermaid
 flowchart LR
   A["Ansible / Vuls / OpenVAS等の入力"] --> B["Source Adapter\n（CLIでオフライン変換）"]
-  B --> C["CollectionEnvelope JSON v0.1.0"]
+  B --> C["CollectionEnvelope JSON v0.1/v0.2"]
   C -->|手動Webアップロード or REST POST| D["Importer\n形式検証・冪等化・原子性"]
   D --> E[("Profile/Asset/Imported Products\n+ OS/KB snapshot")]
   E --> F["既存M1a Matching / UI"]
@@ -66,8 +66,8 @@ curl -fsS -X POST \
 - 同じホスト識別子があれば既存Assetへ紐付ける。現段階では`observation.asset_id`をホスト名として扱うため、**ホスト名変更で別Assetになる可能性**がある。
 - 別のProfileへ同名ホストを持ち込んでも混ざらない。
 - **取得に失敗したホストや今回のJSONに存在しないホストは、既存台帳から削除しない。**
-- ソフト一覧やKB/パッチ一覧が空の場合、収集失敗との区別ができないため**前回の非空インポート済み製品・KB情報を削除しない**（古い情報が残る可能性はある）。
-- 新しい非空パッケージ一覧を取得できたホストについては、そのホストの**以前のインポート由来製品だけ**を置換。手動入力した製品は残す。
+- **v0.1では**ソフト一覧やKB/パッチ一覧が空の場合、取得の完全性を保証できないため**前回の同Collectorの非空製品・KB情報を削除しない**。**v0.2では`coverage=complete`の空配列だけが明示的な削除根拠**（古い情報が残る可能性はある）。
+- v0.1の非空パッケージ一覧を取得したホストについては、そのホストの**同一Collector由来製品だけ**を置換。v0.2 partialは追加して保持、completeは置換。手動入力した製品は残す。
 - `errors`は件数を記録し、認証エラーメッセージ原文等の秘密が混入する危険を避けるため保存しない。
 - 先行実装のMatcherはCVE `affected` の**製品名**による保守的候補照合。RPMのepoch/releaseやKBの詳細情報は保存するが、**まだ修正バージョンの自動判定には使っていない**。
 
@@ -111,4 +111,4 @@ node --check src/vulnfolio/web/environment.js
 - Chromium受入では、ブラウザからJSONアップロード→Asset/Product登録→CVE影響候補までの表示を確認。
 - テストではCIRCL APIへ通信しない。
 
-関連：[M1aのProfile/Asset/候補管理](poc-m1.md) / [M1c Linux/Windows収集PoC](poc-m1c-agentless.md) / [モジュール化](modularity.md) / [収集設計](data-ingestion.md)
+関連：[M1dの観測出典・品質・新JSON契約](poc-m1d-data-quality.md) / [M1aのProfile/Asset/候補管理](poc-m1.md) / [M1c Linux/Windows収集PoC](poc-m1c-agentless.md) / [モジュール化](modularity.md) / [収集設計](data-ingestion.md)
