@@ -92,6 +92,8 @@ def candidates_for_inventory(products: list[dict[str, Any]], cves: list[Any]) ->
                     "match_basis": basis,
                     "vendor_verified": vendor_verified,
                     "source_container": origin,
+                    "observation_source": installed.get("source_collector", "unknown"),
+                    "observed_at": installed.get("observed_at"),
                     "evidence": f"CVE {origin}.affected product name matched exactly; {explanation}. "
                                 + ("Vendor matched." if vendor_verified else "Vendor not verified.")
                                 + " This is a candidate, not a confirmed affected asset.",
