@@ -217,6 +217,10 @@ async function loadCandidates() {
       ? "Exact version listed" : "Product name only");
     basis.title = candidate.evidence;
     if (!candidate.vendor_verified) basis.append(document.createTextNode(" · vendor unverified"));
+    basis.append(document.createTextNode(
+      " · " + (candidate.observation_source || "unknown source") +
+      (candidate.observed_at ? " · seen " + candidate.observed_at : " · time unknown")
+    ));
 
     const controls = document.createElement("td");
     const group = document.createElement("div");
