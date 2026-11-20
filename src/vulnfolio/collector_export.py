@@ -18,7 +18,7 @@ from tempfile import TemporaryDirectory
 from typing import Any
 
 from vulnfolio.adapters.ansible import AnsibleAdapter
-from vulnfolio.contracts import InputError, envelope
+from vulnfolio.contracts import InputError, envelope, upgrade_inventory_envelope_v02
 from vulnfolio.inventory_import import validate_envelope, ImportValidationError
 from vulnfolio.vulnerability_storage import utcnow
 
@@ -168,6 +168,27 @@ def save_report(output: Path, report: dict[str, Any]) -> None:
         stream.write(data)
 
 
+def read_asset_key_map(path: Path) -> dict[str, str]:
+    """Local private alias map; never log host keys or stable identifiers."""
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > 65536:
+        raise CollectorError("Asset-key map must be a regular JSON file up to 64 KiB")
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise CollectorError("Invalid asset-key map JSON") from exc
+    if not isinstance(payload, dict) or len(payload) > MAX_HOSTS:
+        raise CollectorError("Asset-key map must be a JSON object with at most 200 entries")
+    seen: set[str] = set()
+    for host, key in payload.items():
+        if not (isinstance(host, str) and isinstance(key, str)
+                and 1 <= len(host) <= 180 and 1 <= len(key) <= 180):
+            raise CollectorError("Asset-key map must contain nonempty hostname/key strings")
+        if key in seen:
+            raise CollectorError("Asset-key map must not reuse one stable key for multiple hosts")
+        seen.add(key)
+    return payload
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description="Read-only Ansible inventory to vulnfolio CollectionEnvelope")
     p.add_argument("--profile", required=True, help="existing Profile ID in My Environment")
@@ -176,10 +197,16 @@ def main() -> int:
     p.add_argument("--artifacts", type=Path, help="OFFLINE mode: existing host JSON artifacts")
     p.add_argument("--expected-host", action="append", default=[],
                    help="OFFLINE mode: expected hostname (repeatable)")
+    p.add_argument("--schema-version", choices=("0.1.0", "0.2.0"), default="0.1.0",
+                   help="default 0.1.0; v0.2 adds conservative coverage/identity")
+    p.add_argument("--asset-key-map", type=Path,
+                   help="private JSON {inventory_hostname: stable_key}; requires --schema-version 0.2.0")
     args = p.parse_args()
     if not args.profile.strip():
         p.error("--profile must not be empty")
     try:
+        if args.asset_key_map and args.schema_version != "0.2.0":
+            raise CollectorError("--asset-key-map requires --schema-version 0.2.0")
         if args.artifacts:
             if not args.expected_host and not args.inventory:
                 raise CollectorError("Offline --artifacts requires --expected-host or --inventory")
@@ -209,6 +236,12 @@ def main() -> int:
                     ansible_failed = True
                 report = normalize_artifacts(Path(directory), hosts, args.profile,
                                              failed_controller=ansible_failed)
+        if args.schema_version == "0.2.0":
+            mapping = read_asset_key_map(args.asset_key_map) if args.asset_key_map else {}
+            try:
+                report = upgrade_inventory_envelope_v02(report, mapping)
+            except InputError as exc:
+                raise CollectorError(str(exc)) from exc
         save_report(args.output, report)
     except (CollectorError, OSError) as exc:
         p.error(str(exc))
