@@ -59,7 +59,7 @@ chmod 600 private-data/tls/localhost.key
 python -m vulnfolio.ingest_credentials issue \
   --store private-data/auth/tokens.json \
   --profile <profile-id> \
-  --token-output private-data/auth/collector.token \\
+  --token-output private-data/auth/collector.token \
   --ttl-hours 168
 
 # ID・スコープの一覧（秘密値は表示しない）
