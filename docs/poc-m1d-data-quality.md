@@ -134,7 +134,8 @@ CLIのv0.2出力は非空の項目を`partial`、空項目を`unknown`と保守�
 既存レスポンスとの互換性を維持する。
 
 - `GET /api/v1/assets/{asset_id}/inventory`: 従来の`snapshot`を継続し、**`sources[]`を追加**。各ソースにOS Build、`packages_state`/`patches_state`、前回成功時刻、KB一覧を付加。
-- `GET /api/v1/assets/{asset_id}/products`: `source_collector`/`coverage`/`observed_at`を追加。手動製品は`origin=manual`、外部観測は`origin=imported`。
+- `GET /api/v1/assets/{asset_id}/products`: `source_collector`/`coverage`/`observed_at`を追加。`observed_at`は**各製品が実際に報告されたバッチの時刻**であり、部分取得で報告されなかった古い製品の日時を新しく見せない。手動製品は`origin=manual`、外部観測は`origin=imported`。
+- CVE候補にも代表製品の`observation_source`/`observed_at`を追加（出典が古くても現在の脆弱性確定ではない）。
 - WebのMy Environment: OS Build、Collector名、Coverage、日時を出典別に表示。`unknown`はあくまで未確認であり「脆弱性がない」とは表示しない。
 - `POST /api/v1/profiles/{id}/imports`と`POST /api/v1/ingest/profiles/{id}/imports`: v0.1/v0.2を受け入れ、新規/重複の応答に`stale_skipped`を追加。
 
