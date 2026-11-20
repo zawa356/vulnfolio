@@ -203,9 +203,11 @@ def _replace_products(conn: sqlite3.Connection, asset_id: str, driver: str,
         return
     for pkg in packages:
         conn.execute("""
-            INSERT OR IGNORE INTO source_products
+            INSERT INTO source_products
               (id,asset_id,collector,import_id,vendor,name,version,epoch,release,arch,manager)
             VALUES(?,?,?,?,'',?,?,?,?,?,?)
+            ON CONFLICT(asset_id,collector,name,version,epoch,release,arch,manager)
+            DO UPDATE SET import_id=excluded.import_id
         """, (uuid4().hex, asset_id, driver, import_id,
               pkg["name"], pkg["version"], pkg["epoch"], pkg["release"],
               pkg["arch"], pkg["manager"]))
