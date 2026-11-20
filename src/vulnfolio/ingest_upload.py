@@ -106,7 +106,15 @@ def send(
                     raise UploadError("Server returned an unexpected import acknowledgement")
                 return body
             if result.status_code in RETRYABLE_STATUSES and attempt < attempts:
-                time.sleep(min(2 ** (attempt - 1), 8))
+                wait = min(2 ** (attempt - 1), 8)
+                if result.status_code == 429:
+                    # Honor the server's bounded Retry-After instead of
+                    # repeatedly hammering an already throttled ingest.
+                    try:
+                        wait = min(60, max(1, int(result.headers.get("Retry-After", ""))))
+                    except ValueError:
+                        pass
+                time.sleep(wait)
                 continue
             # All redirects, 4xx other than 429, and remaining 5xx are terminal.
             # Do not echo server body: it may contain private information.
