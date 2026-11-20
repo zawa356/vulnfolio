@@ -260,6 +260,24 @@ class ObservationQualityTests(unittest.TestCase):
         self.assertEqual(upgraded.list_assessment_history(asset["id"], CVE)[0]["note"],
                          "Legacy preserved")
 
+    def test_same_hostname_with_conflicting_explicit_keys_is_rejected(self):
+        original = report(self.profile, name="shared-name", asset_key="machine:one",
+                          products=[pkg("first")], coverage=("complete", "unknown"))
+        self.imp.import_envelope(self.profile, original)
+        collide = report(self.profile, collector="vuls", name="shared-name",
+                         asset_key="machine:two", products=[pkg("second")],
+                         coverage=("complete", "unknown"),
+                         stamp="2026-11-20T11:00:00Z")
+        with self.assertRaises(ImportValidationError):
+            self.imp.import_envelope(self.profile, collide)
+        self.assertEqual(len(self.assets()), 1)
+        self.assertEqual({p["name"] for p in self.products()}, {"first"})
+        # The second collector may participate if it supplies the SAME key.
+        collide["observations"][0]["asset_key"] = "machine:one"
+        self.imp.import_envelope(self.profile, collide)
+        self.assertEqual(len(self.assets()), 1)
+        self.assertEqual({p["name"] for p in self.products()}, {"first", "second"})
+
     def test_http_json_api_sources_and_global_boundary(self):
         with TestClient(create_app(self.path), client=("127.0.0.1", 9000)) as client:
             payload = report(self.profile, products=[pkg("fluxctl", "1.2.0")],
